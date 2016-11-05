@@ -1,0 +1,14 @@
+name: Event System
+version: ${project.version}
+main: me.gong.eventsystem.EventSystem
+commands:
+  host:
+    aliases: [begin]
+    default: op
+  endevent:
+    aliases: [ende]
+    default: op
+  join:
+    aliases: [j]
+  quit:
+    aliases: [q]
