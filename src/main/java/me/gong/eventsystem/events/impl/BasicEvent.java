@@ -2,6 +2,7 @@ package me.gong.eventsystem.events.impl;
 
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.events.EventManager;
+import me.gong.eventsystem.events.config.Configurable;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 public class BasicEvent extends Event {
 
+    @Configurable
     private Location spawnLocation;
     private Map<UUID, Location> originalLocations = new HashMap<>();
 
