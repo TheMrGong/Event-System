@@ -6,26 +6,27 @@ import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class EventManager {
+public class EventManager implements Listener {
 
     private static final String NO_EVENT_RUNNING = "No event is currently running",
             ALREADY_RUNNING = "An event is already running.", ISNT_PARTICIPATING = "You aren't participating in any event",
             ALREADY_PARTICIPATING = "You are already within an event.";
 
     private Event currentEvent;
-    private Set<UUID> participating;
-    private Set<Event> events;
+    private Set<UUID> participating = new HashSet<>();
+    private Set<Event> events = new HashSet<>();
 
     public EventManager() {
-        events = new HashSet<>();
-        participating = new HashSet<>();
         registerEvent(new BasicEvent());
-        Bukkit.getPluginManager().registerEvents(new PlayerListener(), EventSystem.getInstance());
+        Bukkit.getPluginManager().registerEvents(this, EventSystem.getInstance());
     }
 
     public boolean isEventRunning() {
@@ -33,7 +34,7 @@ public class EventManager {
     }
 
     public void registerEvent(Event... toRegister) {
-        Arrays.stream(toRegister).forEach(e -> events.add(e));
+        Arrays.stream(toRegister).forEach(e -> events.add(e.registerConfigurables()));
     }
 
     public String beginEvent(Event event, CommandSender hoster) {
@@ -95,6 +96,11 @@ public class EventManager {
 
     public Collection<Event> getAvailableEvents() {
         return events;
+    }
+
+    @EventHandler
+    public void onJoin(PlayerQuitEvent ev) {
+        quitEvent(ev.getPlayer(), EventManager.ActionCause.PLUGIN);
     }
     
     public enum ActionCause {

@@ -1,10 +1,17 @@
 package me.gong.eventsystem.events;
 
 import me.gong.eventsystem.EventSystem;
+import me.gong.eventsystem.events.config.data.ConfigData;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class Event implements Listener {
+
+    private Map<String, ConfigData> data = new HashMap<>();
 
     public boolean joinEvent(Player player, EventManager.ActionCause cause) {
         return true;
@@ -19,6 +26,27 @@ public abstract class Event implements Listener {
     public abstract void onEnd(EventManager.ActionCause cause);
     
     public abstract String getEventId();
+
+    public Event registerConfigurables() {
+        EventSystem.getInstance().getDataManager().createValues(data, this);
+        return this;
+    }
+
+    public ConfigData getDataFor(String id) {
+        return data.get(id);
+    }
+
+    public void resetValues() {
+        data.values().forEach(c -> c.set(this, null));
+    }
+
+    public void loadValues(World world) {
+
+    }
+
+    public void saveValues(World world) {
+
+    }
     
     protected boolean isEnabled() {
         return getClass().isInstance(EventSystem.getInstance().getEventManager().getCurrentEvent());

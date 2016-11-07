@@ -1,4 +1,4 @@
-name: Event System
+name: EventSystem
 version: ${project.version}
 main: me.gong.eventsystem.EventSystem
 commands:

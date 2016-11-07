@@ -2,7 +2,9 @@ package me.gong.eventsystem.events.impl;
 
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.events.EventManager;
-import me.gong.eventsystem.events.config.Configurable;
+import me.gong.eventsystem.events.config.data.Task;
+import me.gong.eventsystem.events.config.data.meta.Configurable;
+import me.gong.eventsystem.events.config.data.meta.Logic;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -13,8 +15,12 @@ import java.util.UUID;
 
 public class BasicEvent extends Event {
 
-    @Configurable
+    @Configurable(name = "Spawn Location", description = "Location where players will spawn", id = "spawn-loc")
     private Location spawnLocation;
+
+    @Logic("spawn-loc")
+    public BasicLogic spawnLocLogic = new BasicLogic();
+
     private Map<UUID, Location> originalLocations = new HashMap<>();
 
     @Override
@@ -50,5 +56,14 @@ public class BasicEvent extends Event {
             originalLocations.remove(player.getUniqueId());
         }
 
+    }
+
+    private class BasicLogic implements Task.Logic<Location> {
+
+        @Override
+        public boolean check(Location location, Player player) {
+            System.out.println("Basic logic worked AYYYYY");
+            return true;
+        }
     }
 }
