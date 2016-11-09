@@ -23,8 +23,18 @@ public class EventSystem extends JavaPlugin {
         //demo
         new ServerManager(this);
 
+        //note to self: dont try to be compact by including initializing code in constructor;
+        //just caused event manager and datamanager depending on eachother when
+        //they weren't ready
+
         dataManager = new DataManager();
+        dataManager.initialize();
+
         eventManager = new EventManager();
+        eventManager.initialize();
+
+        dataManager.loadData(); //^ has to be done in this order
+
 
         HostEventCommand he = new HostEventCommand();
         JoinQuitCommand jq = new JoinQuitCommand();
@@ -38,6 +48,8 @@ public class EventSystem extends JavaPlugin {
     @Override
     public void onDisable() {
         instance = null;
+
+        dataManager.saveData();
     }
 
     public EventManager getEventManager() {
@@ -48,7 +60,7 @@ public class EventSystem extends JavaPlugin {
         return dataManager;
     }
 
-    public static EventSystem getInstance() {
+    public static EventSystem get() {
         return instance;
     }
 }

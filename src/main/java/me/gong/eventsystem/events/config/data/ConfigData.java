@@ -1,5 +1,6 @@
 package me.gong.eventsystem.events.config.data;
 
+import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.config.data.meta.Configurable;
 
 import java.lang.reflect.Field;
@@ -11,12 +12,12 @@ public class ConfigData {
     private Task.Logic<?> logic;
     private String name, description;
 
-    public ConfigData(Field field, Task.Logic<?> logic, Configurable data, Object instance) {
+    public ConfigData(Field field, Task.Logic<?> logic, Configurable data) {
         this.field = field;
 
         field.setAccessible(true);
 
-        configType = get(instance).getClass();
+        configType = field.getType();
 
         this.logic = logic;
         this.name = data.name();
@@ -31,16 +32,12 @@ public class ConfigData {
         }
     }
 
-    public Object get(Object instance) {
-        try {
-            return field.get(instance);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Getting config field " + name, e);
-        }
-    }
-
     public Class<?> getConfigType() {
         return configType;
+    }
+
+    public ConfigHandler getHandler() {
+        return EventSystem.get().getDataManager().findConfigHandler(configType);
     }
 
     public Task.Logic<?> getLogic() {

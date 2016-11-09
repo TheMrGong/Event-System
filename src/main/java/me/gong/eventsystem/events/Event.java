@@ -2,12 +2,14 @@ package me.gong.eventsystem.events;
 
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.config.data.ConfigData;
+import me.gong.eventsystem.events.config.data.stored.EventWorldData;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 public abstract class Event implements Listener {
 
@@ -28,7 +30,7 @@ public abstract class Event implements Listener {
     public abstract String getEventId();
 
     public Event registerConfigurables() {
-        EventSystem.getInstance().getDataManager().createValues(data, this);
+        EventSystem.get().getDataManager().createValues(data, this);
         return this;
     }
 
@@ -40,16 +42,18 @@ public abstract class Event implements Listener {
         data.values().forEach(c -> c.set(this, null));
     }
 
-    public void loadValues(World world) {
-
-    }
-
-    public void saveValues(World world) {
-
+    public void loadValuesFrom(EventWorldData data) {
+        data.getData().forEach(new BiConsumer<String, Object>() { //err.. ?
+            @Override
+            public void accept(String string, Object o) {
+                ConfigData d = Event.this.data.get(string);
+                if(d != null) d.set(this, o);
+            }
+        });
     }
     
     protected boolean isEnabled() {
-        return getClass().isInstance(EventSystem.getInstance().getEventManager().getCurrentEvent());
+        return getClass().isInstance(EventSystem.get().getEventManager().getCurrentEvent());
     }
 
     @Override

@@ -4,6 +4,7 @@ import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.impl.BasicEvent;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -24,9 +25,9 @@ public class EventManager implements Listener {
     private Set<UUID> participating = new HashSet<>();
     private Set<Event> events = new HashSet<>();
 
-    public EventManager() {
+    public void initialize() {
         registerEvent(new BasicEvent());
-        Bukkit.getPluginManager().registerEvents(this, EventSystem.getInstance());
+        Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 
     public boolean isEventRunning() {
@@ -37,11 +38,15 @@ public class EventManager implements Listener {
         Arrays.stream(toRegister).forEach(e -> events.add(e.registerConfigurables()));
     }
 
-    public String beginEvent(Event event, CommandSender hoster) {
+    public String beginEvent(Event event, World world, CommandSender hoster) {
         if (isEventRunning()) return ALREADY_RUNNING;
+
+        String errorLoading = EventSystem.get().getDataManager().loadDataFor(event, world.getName());
+        if(errorLoading != null) return errorLoading;
         currentEvent = event;
+
         
-        Bukkit.getPluginManager().registerEvents(currentEvent, EventSystem.getInstance());
+        Bukkit.getPluginManager().registerEvents(currentEvent, EventSystem.get());
         currentEvent.onBegin();
         
         Bukkit.broadcastMessage(StringUtils.format("&e&l" + hoster.getName() + " has hosted an event! (&6" + event.getEventId() + "&e&l)"));

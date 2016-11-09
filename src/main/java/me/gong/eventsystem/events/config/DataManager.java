@@ -2,19 +2,23 @@ package me.gong.eventsystem.events.config;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.events.config.build.ConfigDataBuilder;
 import me.gong.eventsystem.events.config.data.ConfigData;
 import me.gong.eventsystem.events.config.data.ConfigHandler;
-import me.gong.eventsystem.events.config.data.stored.EventData;
-import me.gong.eventsystem.events.config.data.stored.EventWorldData;
 import me.gong.eventsystem.events.config.data.Task;
 import me.gong.eventsystem.events.config.data.impl.LocationConfigHandler;
 import me.gong.eventsystem.events.config.data.meta.Configurable;
 import me.gong.eventsystem.events.config.data.meta.Logic;
+import me.gong.eventsystem.events.config.data.stored.EventData;
+import me.gong.eventsystem.events.config.data.stored.EventWorldData;
+import me.gong.eventsystem.util.JsonUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,11 +29,24 @@ import java.util.logging.Logger;
 
 public class DataManager {
 
+    //TODO remove
+    public static Location DEFAULT_LOCATION = new Location(Bukkit.getWorld("world"), -299.5, 73, 375.5);
+
     private List<ConfigHandler> handlers = new ArrayList<>();
     private List<EventData> eventData = new ArrayList<>();
+    private File eventDataFile;
 
-    public DataManager() {
+    public void initialize() {
         handlers.add(new LocationConfigHandler());
+        File dir = EventSystem.get().getDataFolder();
+        if (!dir.exists() && !dir.mkdir()) throw new RuntimeException("Unable to create directory");
+        eventDataFile = new File(dir, "eventData.json");
+        try {
+            if (!eventDataFile.exists() && !eventDataFile.createNewFile())
+                throw new RuntimeException("Unable to create event data file");
+        } catch (IOException e) {
+            throw new RuntimeException("Creating event data file", e);
+        }
     }
 
     public ConfigHandler findConfigHandler(Class clazz) {
@@ -39,7 +56,7 @@ public class DataManager {
 
     //ayy it worked first time i ran it
     public void createValues(Map<String, ConfigData> data, Event instance) {
-        Logger logger = EventSystem.getInstance().getLogger();
+        Logger logger = EventSystem.get().getLogger();
         Map<String, ConfigDataBuilder> builderMap = new HashMap<>();
         for (Field field : instance.getClass().getDeclaredFields()) {
 
@@ -79,12 +96,67 @@ public class DataManager {
             if ((error = builder.isComplete()) != null) {
                 logger.warning("Unable to create config data for id " + id + ": " + error);
             } else {
-                if (!builder.hasLogic()) builder.setLogic(Task.Logic.DEFAULT);
-                System.out.println("DEBUG: Registered configurable for id " + id + " : " + builder);
+                if (!builder.hasLogic()) builder.setLogic(Task.Logic.DEFAULT); //take some default logic
                 data.put(id, builder.build());
             }
         });
     }
-    
+
+    public EventData getEventDataFor(Event event, boolean createNew) {
+        return eventData.stream().filter(e -> e.getEvent().equalsIgnoreCase(event.getEventId()))
+                .findFirst().orElseGet(() -> {
+                    if (createNew) { //create that new event data
+                        EventData d = new EventData(event.getEventId(), new ArrayList<>());
+                        eventData.add(d);
+                        return d;
+                    } else return null;
+                });
+    }
+
+    public EventWorldData getWorldDataFor(Event event, String world) {
+        EventData data = getEventDataFor(event, false);
+        if (data == null) return null;
+        return data.getWorldDataFor(world);
+    }
+
+    public String loadDataFor(Event event, String world) {
+        EventWorldData data = getWorldDataFor(event, world);
+        if (data == null) return "No event world data for world '" + world + "' event '" + event + "'";
+        event.loadValuesFrom(data);
+        return null;
+    }
+
+    public void loadData() {
+        eventData.clear(); //just in case
+
+        try (BufferedReader r = new BufferedReader(new FileReader(eventDataFile))) {
+            String jsonRaw = "", line;
+
+            while ((line = r.readLine()) != null) jsonRaw += line;
+            JsonElement e = JsonUtils.parser.parse(jsonRaw);
+
+            if(e instanceof JsonNull) return; //signifies this is a new file/empty one.. or something weird.. meh
+
+            if (!(e instanceof JsonArray))
+                throw new RuntimeException("Expected JsonArray from event data, got " + e.getClass().getSimpleName());
+
+            JsonArray json = (JsonArray) e;
+            json.forEach(dat -> eventData.add(EventData.load(dat.getAsJsonObject())));
+        } catch (IOException e) {
+            throw new RuntimeException("Reading event data", e);
+        }
+
+    }
+
+    public void saveData() {
+        try (BufferedWriter w = new BufferedWriter(new FileWriter(eventDataFile))) {
+            JsonArray ret = new JsonArray();
+            eventData.stream().filter(e -> !e.isEmpty()).forEach(e -> ret.add(e.save()));
+            w.write(JsonUtils.gson.toJson(ret));
+        } catch (IOException e) {
+            throw new RuntimeException("Saving event data", e);
+        }
+    }
+
 
 }

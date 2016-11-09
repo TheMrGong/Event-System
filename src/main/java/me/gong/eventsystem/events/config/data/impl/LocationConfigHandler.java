@@ -1,18 +1,18 @@
 package me.gong.eventsystem.events.config.data.impl;
 
-import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import me.gong.eventsystem.events.config.data.ConfigHandler;
 import me.gong.eventsystem.util.JsonUtils;
 import org.bukkit.Location;
 
 public class LocationConfigHandler implements ConfigHandler {
     @Override
-    public JsonElement save(Object location) {
-        return JsonUtils.locationToElement((Location) location);
+    public void save(Object location, JsonObject obj) {
+        JsonUtils.locationToElement((Location) location, obj);
     }
 
     @Override
-    public Object load(JsonElement data) {
+    public Object load(JsonObject data) {
         return JsonUtils.elementToLocation(data);
     }
 

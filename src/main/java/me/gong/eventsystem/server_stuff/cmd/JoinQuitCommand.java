@@ -13,7 +13,7 @@ public class JoinQuitCommand implements CommandExecutor {
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
 
         if(commandSender instanceof Player) {
-            EventManager em = EventSystem.getInstance().getEventManager();
+            EventManager em = EventSystem.get().getEventManager();
 
             if(command.getName().equalsIgnoreCase("join")) {
 

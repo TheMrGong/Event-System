@@ -1,15 +1,16 @@
 package me.gong.eventsystem.util;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 public final class JsonUtils {
 
-    public static JsonElement locationToElement(Location location) {
-        JsonObject ret = new JsonObject();
+    public static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    public static final JsonParser parser = new JsonParser();
+
+    public static void locationToElement(Location location, JsonObject ret) {
 
         ret.addProperty("world", location.getWorld().getName());
         ret.addProperty("x", location.getX());
@@ -18,12 +19,9 @@ public final class JsonUtils {
 
         ret.addProperty("yaw", location.getYaw());
         ret.addProperty("pitch", location.getPitch());
-        return ret;
     }
 
-    public static Location elementToLocation(JsonElement element) {
-        if (!(element instanceof JsonObject)) throw new RuntimeException("Expected JsonObject, got " + element.getClass().getSimpleName());
-        JsonObject obj = (JsonObject) element;
+    public static Location elementToLocation(JsonObject obj) {
 
         String wrld = obj.get("world").getAsString();
         World world = Bukkit.getWorld(wrld);

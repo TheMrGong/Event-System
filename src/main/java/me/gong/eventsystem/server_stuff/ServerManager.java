@@ -23,6 +23,7 @@ public class ServerManager implements Listener {
         p.teleport(p.getWorld().getSpawnLocation());
         p.setHealth(20);
         p.setFoodLevel(20);
+        p.setSaturation(20);
         event.setJoinMessage(StringUtils.format("&b"+p.getName()+"&3 has joined."));
     }
 }
