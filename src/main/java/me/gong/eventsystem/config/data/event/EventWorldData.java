@@ -1,18 +1,17 @@
-package me.gong.eventsystem.events.config.data.stored;
+package me.gong.eventsystem.config.data.event;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import javafx.util.Pair;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.Event;
-import me.gong.eventsystem.events.config.DataManager;
-import me.gong.eventsystem.events.config.data.ConfigData;
-import me.gong.eventsystem.events.config.data.ConfigHandler;
+import me.gong.eventsystem.config.DataManager;
+import me.gong.eventsystem.config.data.ConfigData;
+import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.util.SimpleEntry;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class EventWorldData {
     private String world;
@@ -29,6 +28,10 @@ public class EventWorldData {
 
     public Map<String, Object> getData() {
         return data;
+    }
+
+    public boolean isComplete() {
+        return !data.isEmpty() && data.values().stream().allMatch(Objects::nonNull);
     }
 
     public JsonObject save() {
@@ -48,6 +51,7 @@ public class EventWorldData {
             Map.Entry<String, Object> entry = loadEntry(event, e.getAsJsonObject());
             if(entry != null) data.put(entry.getKey(), entry.getValue());
         });
+        event.getData().keySet().stream().filter(k -> !data.containsKey(k)).forEach(k -> data.put(k, null));
         return new EventWorldData(world, data);
     }
 
@@ -74,7 +78,12 @@ public class EventWorldData {
     }
 
     private ConfigHandler getHandlerFor(Object object) {
+        if(object == null) return null;
         DataManager dm = EventSystem.get().getDataManager();
         return dm.findConfigHandler(object.getClass());
+    }
+
+    public void updateData(Map<String, Object> data) {
+        this.data.putAll(data);
     }
 }

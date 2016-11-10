@@ -46,9 +46,11 @@ public class HostEventCommand implements CommandExecutor {
         } else if (command.getName().equalsIgnoreCase("endevent")) {
 
             String error = em.endCurrentEvent(EventManager.ActionCause.MANUAL);
-            Bukkit.broadcastMessage(StringUtils.info("&6&l" + commandSender.getName() + " &c&lhas ended the current event."));
             if (error != null) commandSender.sendMessage(StringUtils.warn("Unable to end event: " + error));
-            else commandSender.sendMessage(StringUtils.info("Event  has been ended."));
+            else {
+                Bukkit.broadcastMessage(StringUtils.info("&6&l" + commandSender.getName() + " &c&lhas ended the current event."));
+                commandSender.sendMessage(StringUtils.info("Event has been ended."));
+            }
 
         }
         return true;

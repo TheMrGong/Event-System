@@ -34,6 +34,10 @@ public class EventManager implements Listener {
         return currentEvent != null;
     }
 
+    public boolean isEventRunning(Event event) {
+        return isEventRunning() && currentEvent.getClass().isAssignableFrom(event.getClass());
+    }
+
     public void registerEvent(Event... toRegister) {
         Arrays.stream(toRegister).forEach(e -> events.add(e.registerConfigurables()));
     }
@@ -59,7 +63,10 @@ public class EventManager implements Listener {
         if (!isEventRunning()) return NO_EVENT_RUNNING;
 
         getCurrentlyPlaying().forEach(p -> currentEvent.quitEvent(p, ActionCause.PLUGIN));
+
         currentEvent.onEnd(cause);
+        currentEvent.resetValues();
+
         HandlerList.unregisterAll(currentEvent);
 
         participating.clear();

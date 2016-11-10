@@ -1,4 +1,4 @@
-package me.gong.eventsystem.events.config.data.stored;
+package me.gong.eventsystem.config.data.event;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -7,6 +7,7 @@ import me.gong.eventsystem.events.Event;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class EventData {
@@ -28,6 +29,14 @@ public class EventData {
 
     public EventWorldData getWorldDataFor(String world) {
         return worldData.stream().filter(wd -> wd.getWorld().equalsIgnoreCase(world)).findFirst().orElse(null);
+    }
+
+    public void createWorldDataFor(String world, Map<String, Object> obj) {
+        EventWorldData data = getWorldDataFor(world);
+        if(data == null) {
+            data = new EventWorldData(world, obj);
+            worldData.add(data);
+        } else data.updateData(obj);
     }
 
     public boolean isEmpty() {

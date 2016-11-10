@@ -1,9 +1,14 @@
-package me.gong.eventsystem.events.config.data;
+package me.gong.eventsystem.config.data;
 
 import me.gong.eventsystem.EventSystem;
-import me.gong.eventsystem.events.config.data.meta.Configurable;
+import me.gong.eventsystem.config.meta.ConfigHandler;
+import me.gong.eventsystem.config.meta.Configurable;
+import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.task.data.TaskData;
+import me.gong.eventsystem.util.CancellableCallback;
 
 import java.lang.reflect.Field;
+import java.util.UUID;
 
 public class ConfigData {
 
@@ -34,6 +39,10 @@ public class ConfigData {
 
     public Class<?> getConfigType() {
         return configType;
+    }
+
+    public TaskData generateData(String id, UUID player, CancellableCallback callback) {
+        return new TaskData(id, player, description, callback, logic);
     }
 
     public ConfigHandler getHandler() {

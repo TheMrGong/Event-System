@@ -1,10 +1,13 @@
 package me.gong.eventsystem;
 
 import me.gong.eventsystem.events.EventManager;
-import me.gong.eventsystem.events.config.DataManager;
+import me.gong.eventsystem.config.DataManager;
+import me.gong.eventsystem.events.task.TaskManager;
 import me.gong.eventsystem.server_stuff.cmd.HostEventCommand;
 import me.gong.eventsystem.server_stuff.ServerManager;
 import me.gong.eventsystem.server_stuff.cmd.JoinQuitCommand;
+import me.gong.eventsystem.server_stuff.cmd.SetupEventCommand;
+import me.gong.eventsystem.server_stuff.cmd.TaskCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class EventSystem extends JavaPlugin {
@@ -17,15 +20,14 @@ public class EventSystem extends JavaPlugin {
 
     private EventManager eventManager;
     private DataManager dataManager;
+    private TaskManager taskManager;
 
     @Override
     public void onEnable() {
         //demo
         new ServerManager(this);
 
-        //note to self: dont try to be compact by including initializing code in constructor;
-        //just caused event manager and datamanager depending on eachother when
-        //they weren't ready
+        taskManager = new TaskManager();
 
         dataManager = new DataManager();
         dataManager.initialize();
@@ -43,13 +45,17 @@ public class EventSystem extends JavaPlugin {
         getCommand("endevent").setExecutor(he);
         getCommand("join").setExecutor(jq);
         getCommand("quit").setExecutor(jq);
+        getCommand("setup").setExecutor(new SetupEventCommand());
+        getCommand("task").setExecutor(new TaskCommand());
     }
 
     @Override
     public void onDisable() {
-        instance = null;
 
         dataManager.saveData();
+
+        //note to self, set the instance to null _at the end_
+        instance = null;
     }
 
     public EventManager getEventManager() {
@@ -58,6 +64,10 @@ public class EventSystem extends JavaPlugin {
 
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    public TaskManager getTaskManager() {
+        return taskManager;
     }
 
     public static EventSystem get() {

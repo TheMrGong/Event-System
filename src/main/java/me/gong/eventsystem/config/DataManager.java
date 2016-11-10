@@ -1,22 +1,19 @@
-package me.gong.eventsystem.events.config;
+package me.gong.eventsystem.config;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import me.gong.eventsystem.EventSystem;
+import me.gong.eventsystem.config.meta.ConfigHandler;
+import me.gong.eventsystem.config.meta.Configurable;
 import me.gong.eventsystem.events.Event;
-import me.gong.eventsystem.events.config.build.ConfigDataBuilder;
-import me.gong.eventsystem.events.config.data.ConfigData;
-import me.gong.eventsystem.events.config.data.ConfigHandler;
-import me.gong.eventsystem.events.config.data.Task;
-import me.gong.eventsystem.events.config.data.impl.LocationConfigHandler;
-import me.gong.eventsystem.events.config.data.meta.Configurable;
-import me.gong.eventsystem.events.config.data.meta.Logic;
-import me.gong.eventsystem.events.config.data.stored.EventData;
-import me.gong.eventsystem.events.config.data.stored.EventWorldData;
+import me.gong.eventsystem.config.data.ConfigData;
+import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.config.impl.LocationConfigHandler;
+import me.gong.eventsystem.events.task.meta.Logic;
+import me.gong.eventsystem.config.data.event.EventData;
+import me.gong.eventsystem.config.data.event.EventWorldData;
 import me.gong.eventsystem.util.JsonUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -29,8 +26,8 @@ import java.util.logging.Logger;
 
 public class DataManager {
 
-    //TODO remove
-    public static Location DEFAULT_LOCATION = new Location(Bukkit.getWorld("world"), -299.5, 73, 375.5);
+    private static final String NO_WORLD_DATA = "No event world data for world '%s' event '%s'",
+            DATA_INCOMPLETE = "Data was incomplete for event";
 
     private List<ConfigHandler> handlers = new ArrayList<>();
     private List<EventData> eventData = new ArrayList<>();
@@ -119,9 +116,29 @@ public class DataManager {
         return data.getWorldDataFor(world);
     }
 
+    public void createWorldDataFor(Event event, String world, Map<String, Object> data) {
+        EventData d = getEventDataFor(event, true);
+        d.createWorldDataFor(world, data);
+    }
+
+    public Map<String, Object> getCurrentWorldData(Event event, String world) {
+        EventData d = getEventDataFor(event, true);
+        EventWorldData wd = d.getWorldDataFor(world);
+
+        Map<String, Object> map;
+        if(wd == null) {
+            map = new HashMap<>();
+            event.getData().keySet().forEach(k -> map.put(k, null));
+            d.createWorldDataFor(world, map);
+        } else map = wd.getData();
+
+        return new HashMap<>(map);
+    }
+
     public String loadDataFor(Event event, String world) {
         EventWorldData data = getWorldDataFor(event, world);
-        if (data == null) return "No event world data for world '" + world + "' event '" + event + "'";
+        if (data == null) return String.format(NO_WORLD_DATA, world, event);
+        if(!data.isComplete()) return DATA_INCOMPLETE;
         event.loadValuesFrom(data);
         return null;
     }

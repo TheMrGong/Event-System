@@ -2,10 +2,9 @@ package me.gong.eventsystem.events.impl;
 
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.events.EventManager;
-import me.gong.eventsystem.events.config.data.Task;
-import me.gong.eventsystem.events.config.data.meta.Configurable;
-import me.gong.eventsystem.events.config.data.meta.Logic;
-import org.bukkit.Bukkit;
+import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.config.meta.Configurable;
+import me.gong.eventsystem.events.task.meta.Logic;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -18,6 +17,12 @@ public class BasicEvent extends Event {
     @Configurable(name = "Spawn Location", description = "Location where players will spawn", id = "spawn-loc")
     private Location spawnLocation;
 
+    @Configurable(name = "that other thing", description = "Other thing", id = "other-thing")
+    private Location otherThing;
+
+    @Configurable(name = "Woah woah", description = "its a woah", id = "woah")
+    public Location woah1;
+
     @Logic("spawn-loc")
     public BasicLogic spawnLocLogic = new BasicLogic();
 
@@ -25,14 +30,13 @@ public class BasicEvent extends Event {
 
     @Override
     public void onBegin() {
-        //begin logic
-        spawnLocation = new Location(Bukkit.getWorld("world"), 292.5, 75, 265.5);
+        spawnLocation.add(0.5, 1, 0.5);
+        //spawn location atuomatically set
     }
 
     @Override
     public void onEnd(EventManager.ActionCause cause) {
         //ending logic
-        spawnLocation = null;
         originalLocations.clear();
     }
 
@@ -62,7 +66,6 @@ public class BasicEvent extends Event {
 
         @Override
         public boolean check(Location location, Player player) {
-            System.out.println("Basic logic worked AYYYYY");
             return true;
         }
     }

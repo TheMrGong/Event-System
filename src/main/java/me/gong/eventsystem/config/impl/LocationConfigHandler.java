@@ -1,7 +1,7 @@
-package me.gong.eventsystem.events.config.data.impl;
+package me.gong.eventsystem.config.impl;
 
 import com.google.gson.JsonObject;
-import me.gong.eventsystem.events.config.data.ConfigHandler;
+import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.util.JsonUtils;
 import org.bukkit.Location;
 

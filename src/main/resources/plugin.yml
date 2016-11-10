@@ -8,6 +8,10 @@ commands:
   endevent:
     aliases: [ende]
     default: op
+  setup:
+    default: op
+  task:
+    default: op
   join:
     aliases: [j]
   quit:

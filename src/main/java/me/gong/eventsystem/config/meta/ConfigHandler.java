@@ -1,4 +1,4 @@
-package me.gong.eventsystem.events.config.data;
+package me.gong.eventsystem.config.meta;
 
 import com.google.gson.JsonObject;
 

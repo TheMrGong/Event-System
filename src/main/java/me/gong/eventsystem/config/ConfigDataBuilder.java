@@ -1,8 +1,8 @@
-package me.gong.eventsystem.events.config.build;
+package me.gong.eventsystem.config;
 
-import me.gong.eventsystem.events.config.data.ConfigData;
-import me.gong.eventsystem.events.config.data.Task;
-import me.gong.eventsystem.events.config.data.meta.Configurable;
+import me.gong.eventsystem.config.data.ConfigData;
+import me.gong.eventsystem.config.meta.Configurable;
+import me.gong.eventsystem.events.task.meta.Task;
 
 import java.lang.reflect.Field;
 
