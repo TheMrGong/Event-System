@@ -1,6 +1,6 @@
 package me.gong.eventsystem.events.task.impl;
 
-import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.util.CancellableCallback;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Location;
@@ -12,8 +12,8 @@ import java.util.UUID;
 
 public class LocationTask extends Task<Location> {
 
-    public LocationTask(String id, UUID creating, String help, CancellableCallback<Location> callback, Logic<Location> logic) {
-        super(id, creating, help, callback, logic);
+    public LocationTask(String id, String event, UUID creating, String help, CancellableCallback<Location> callback, Logic<Location> logic) {
+        super(id, event, creating, help, callback, logic);
     }
 
     @Override

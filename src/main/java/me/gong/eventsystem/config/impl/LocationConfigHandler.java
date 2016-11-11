@@ -7,8 +7,8 @@ import org.bukkit.Location;
 
 public class LocationConfigHandler implements ConfigHandler {
     @Override
-    public void save(Object location, JsonObject obj) {
-        JsonUtils.locationToElement((Location) location, obj);
+    public void save(Object data, JsonObject obj) {
+        JsonUtils.locationToElement((Location) data, obj);
     }
 
     @Override

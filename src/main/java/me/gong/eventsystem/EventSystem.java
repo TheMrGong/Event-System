@@ -3,11 +3,8 @@ package me.gong.eventsystem;
 import me.gong.eventsystem.events.EventManager;
 import me.gong.eventsystem.config.DataManager;
 import me.gong.eventsystem.events.task.TaskManager;
-import me.gong.eventsystem.server_stuff.cmd.HostEventCommand;
 import me.gong.eventsystem.server_stuff.ServerManager;
-import me.gong.eventsystem.server_stuff.cmd.JoinQuitCommand;
-import me.gong.eventsystem.server_stuff.cmd.SetupEventCommand;
-import me.gong.eventsystem.server_stuff.cmd.TaskCommand;
+import me.gong.eventsystem.server_stuff.cmd.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class EventSystem extends JavaPlugin {

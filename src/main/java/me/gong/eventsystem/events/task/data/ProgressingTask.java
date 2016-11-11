@@ -1,8 +1,8 @@
-package me.gong.eventsystem.events.task.data.inprog;
+package me.gong.eventsystem.events.task.data;
 
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.Event;
-import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.util.CancellableCallback;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
@@ -40,20 +40,25 @@ public class ProgressingTask {
         this.callback = callback;
         this.player = player.getUniqueId();
         this.eventId = event.getEventId();
+        this.taskIndex = -1;
         player.sendMessage(StringUtils.info("Beginning setup for event '" + eventId + "'"));
         player.sendMessage(StringUtils.info("The following tasks can be completed: "));
         listAllTasks();
+        player.sendMessage("");
         player.sendMessage(StringUtils.info("Run &a/task <id>&7 to do &ea different task&7 or redo a task."));
         player.sendMessage(StringUtils.info("To &esave all progress&7, run &a/setup finish&7."));
         player.sendMessage(StringUtils.info("To &ediscard all changes&7, run &a/setup cancel&7."));
+        player.sendMessage("");
         player.sendMessage(StringUtils.info("You can &esee your progress&7 by running &a/task list&7."));
-        setTask();
+        progress(null);
     }
 
     private void progress(Object obj) {
         Task t = getCurrentTask();
-        unsetTask();
-        completed.put(t.getId(), obj);
+        if(t != null) {
+            unsetTask();
+            if(obj != null) completed.put(t.getId(), obj);
+        }
 
         int index = findNextIncomplete();
         Player pl = getPlayer();
@@ -99,7 +104,10 @@ public class ProgressingTask {
     public void unsetTask() {
 
         Task t = getCurrentTask();
-        if (t != null) HandlerList.unregisterAll(t);
+        if (t != null) {
+            t.endTask();
+            HandlerList.unregisterAll(t);
+        }
     }
 
     private void setTask() {

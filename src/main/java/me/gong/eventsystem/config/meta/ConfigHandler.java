@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 
 public interface ConfigHandler {
 
-    void save(Object Object, JsonObject element);
+    void save(Object data, JsonObject obj);
 
     Object load(JsonObject data);
 

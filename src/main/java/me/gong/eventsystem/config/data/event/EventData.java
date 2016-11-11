@@ -48,7 +48,8 @@ public class EventData {
         ret.addProperty("event", event);
 
         JsonArray data = new JsonArray();
-        worldData.stream().map(EventWorldData::save).filter(Objects::nonNull).forEach(data::add);
+        Event evInstance = EventSystem.get().getEventManager().getEventForId(event);
+        worldData.stream().map(wd -> wd.save(evInstance)).filter(Objects::nonNull).forEach(data::add);
 
         ret.add("data", data);
         return ret;

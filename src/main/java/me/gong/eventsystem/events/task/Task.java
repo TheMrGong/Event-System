@@ -1,5 +1,7 @@
-package me.gong.eventsystem.events.task.meta;
+package me.gong.eventsystem.events.task;
 
+import me.gong.eventsystem.EventSystem;
+import me.gong.eventsystem.config.data.ConfigData;
 import me.gong.eventsystem.util.CancellableCallback;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -12,11 +14,12 @@ public abstract class Task<Type> implements Listener {
     protected CancellableCallback<Type> callback;
     protected Logic<Type> logic;
     protected UUID creating;
-    private String id;
+    protected String id, event;
     protected String help;
 
-    public Task(String id, UUID creating, String help, CancellableCallback<Type> callback, Logic<Type> logic) {
+    public Task(String id, String event, UUID creating, String help, CancellableCallback<Type> callback, Logic<Type> logic) {
         this.id = id;
+        this.event = event;
         this.creating = creating;
         this.help = help;
         this.callback = callback;
@@ -24,6 +27,10 @@ public abstract class Task<Type> implements Listener {
     }
 
     public void beginTask() {
+
+    }
+
+    public void endTask() {
 
     }
 
@@ -39,7 +46,11 @@ public abstract class Task<Type> implements Listener {
         return player.getUniqueId().equals(creating);
     }
 
-    public String toString(Class<?> creating) {
+    protected final ConfigData getConfigData() {
+        return EventSystem.get().getEventManager().getEventForId(event).getDataFor(id);
+    }
+
+    public final String toString(Class<?> creating) {
         return creating.getSimpleName() + " " + id + " - " + help;
     }
 

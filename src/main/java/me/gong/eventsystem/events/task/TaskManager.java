@@ -3,10 +3,10 @@ package me.gong.eventsystem.events.task;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.config.data.ConfigData;
-import me.gong.eventsystem.events.task.meta.Task;
 import me.gong.eventsystem.events.task.data.TaskFrame;
+import me.gong.eventsystem.events.task.impl.ListTask;
 import me.gong.eventsystem.events.task.impl.LocationTask;
-import me.gong.eventsystem.events.task.data.inprog.ProgressingTask;
+import me.gong.eventsystem.events.task.data.ProgressingTask;
 import me.gong.eventsystem.util.CancellableCallback;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
@@ -33,6 +33,7 @@ public class TaskManager implements Listener {
 
     public TaskManager() {
         tasks.add(new TaskFrame(LocationTask.class));
+        tasks.add(new TaskFrame(ListTask.class));
         Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 
@@ -43,9 +44,9 @@ public class TaskManager implements Listener {
     public List<Task> generateTaskFor(Player player, CancellableCallback callback, Event event) {
         return event.getData().entrySet().stream().map(dat -> {
             ConfigData d = dat.getValue();
-            TaskFrame frame = getTaskFrameFor(d.getConfigType());
+            TaskFrame frame = d.getFrame(dat.getKey(), event);
 
-            if (frame != null) return frame.createTask(d.generateData(dat.getKey(), player.getUniqueId(), callback));
+            if (frame != null) return frame.createTask(d.generateData(dat.getKey(), event, player.getUniqueId(), callback));
             return null;
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }

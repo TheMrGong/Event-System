@@ -1,6 +1,6 @@
 package me.gong.eventsystem.events.task.data;
 
-import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.util.CancellableCallback;
 
 import java.lang.reflect.Constructor;
@@ -14,15 +14,26 @@ public class TaskFrame {
 
     private Constructor<? extends Task> taskConstructor;
 
+    public TaskFrame(Class<? extends Task> taskClass, Class<?> creating) {
+        setupValues(taskClass, creating);
+    }
+
     public TaskFrame(Class<? extends Task> taskClass) {
-        this.taskClass = taskClass;
         try {
             creating = (Class<?>) taskClass.getMethod("getCreating").invoke(null);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
             throw new RuntimeException("Unable to find 'getCreating' method for task " + taskClass.getSimpleName(), ex);
         }
+        setupValues(taskClass, creating);
+    }
+
+    private void setupValues(Class<? extends Task> taskClass, Class<?> creating) {
+        this.taskClass = taskClass;
+        this.creating = creating;
+
         try {
-            taskConstructor = taskClass.getConstructor(String.class, UUID.class, String.class, CancellableCallback.class, Task.Logic.class);
+            taskConstructor = taskClass.getConstructor(String.class, String.class, UUID.class, String.class,
+                    CancellableCallback.class, Task.Logic.class);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Invalid constructor for task " + taskClass.getSimpleName(), e);
         }
@@ -38,7 +49,7 @@ public class TaskFrame {
 
     public Task createTask(TaskData data) {
         try {
-            return taskConstructor.newInstance(data.getId(), data.getCreating(), data.getHelp(), data.getCallback(), data.getLogic());
+            return taskConstructor.newInstance(data.getId(), data.getEvent(), data.getCreating(), data.getHelp(), data.getCallback(), data.getLogic());
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException("Creating task " + taskClass.getSimpleName());
         }

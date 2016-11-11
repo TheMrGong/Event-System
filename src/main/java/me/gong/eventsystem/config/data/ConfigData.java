@@ -3,8 +3,10 @@ package me.gong.eventsystem.config.data;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.config.meta.Configurable;
-import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.Event;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.events.task.data.TaskData;
+import me.gong.eventsystem.events.task.data.TaskFrame;
 import me.gong.eventsystem.util.CancellableCallback;
 
 import java.lang.reflect.Field;
@@ -14,7 +16,9 @@ public class ConfigData {
 
     private Field field;
     private Class<?> configType;
+
     private Task.Logic<?> logic;
+
     private String name, description;
 
     public ConfigData(Field field, Task.Logic<?> logic, Configurable data) {
@@ -37,16 +41,28 @@ public class ConfigData {
         }
     }
 
+    public Field getField() {
+        return field;
+    }
+
     public Class<?> getConfigType() {
         return configType;
     }
 
-    public TaskData generateData(String id, UUID player, CancellableCallback callback) {
-        return new TaskData(id, player, description, callback, logic);
+    public TaskData generateData(String id, Event event, UUID player, CancellableCallback callback) {
+        return new TaskData(id, event.getEventId(), player, description, callback, logic);
     }
 
-    public ConfigHandler getHandler() {
-        return EventSystem.get().getDataManager().findConfigHandler(configType);
+    public ConfigHandler getHandler(String id, Event event) {
+        ConfigHandler handler = event.findCustomHandler(id);
+        return handler == null && (handler = event.findCustomHandler(configType)) == null ?
+                EventSystem.get().getDataManager().findConfigHandler(configType) : handler;
+    }
+
+    public TaskFrame getFrame(String id, Event event) {
+        TaskFrame handler = event.findCustomFrame(id);
+        return handler == null && (handler = event.findCustomFrame(configType)) == null ?
+                EventSystem.get().getTaskManager().getTaskFrameFor(configType) : handler;
     }
 
     public Task.Logic<?> getLogic() {

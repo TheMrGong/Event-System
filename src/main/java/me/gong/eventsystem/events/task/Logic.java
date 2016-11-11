@@ -1,4 +1,4 @@
-package me.gong.eventsystem.events.task.meta;
+package me.gong.eventsystem.events.task;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

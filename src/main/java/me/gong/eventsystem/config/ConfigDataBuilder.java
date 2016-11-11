@@ -2,7 +2,8 @@ package me.gong.eventsystem.config;
 
 import me.gong.eventsystem.config.data.ConfigData;
 import me.gong.eventsystem.config.meta.Configurable;
-import me.gong.eventsystem.events.task.meta.Task;
+import me.gong.eventsystem.events.task.Task;
+import me.gong.eventsystem.events.task.data.TaskFrame;
 
 import java.lang.reflect.Field;
 
@@ -24,7 +25,7 @@ public class ConfigDataBuilder {
     }
 
     public String isComplete() {
-        if(field == null || data == null) return "Didn't find original field for logic.";
+        if (field == null || data == null) return "Didn't find original field for logic.";
         return null;
     }
 

@@ -34,11 +34,14 @@ public class EventWorldData {
         return !data.isEmpty() && data.values().stream().allMatch(Objects::nonNull);
     }
 
-    public JsonObject save() {
+    public JsonObject save(Event event) {
         JsonObject ret = new JsonObject();
         ret.addProperty("world", world);
         JsonArray jData = new JsonArray();
-        data.entrySet().forEach(d -> jData.add(saveEntry(d)));
+        data.entrySet().forEach(d -> {
+            JsonObject entry = saveEntry(d, event);
+            if(entry != null) jData.add(entry);
+        });
         ret.add("values", jData);
         return ret;
     }
@@ -55,9 +58,9 @@ public class EventWorldData {
         return new EventWorldData(world, data);
     }
 
-    private JsonObject saveEntry(Map.Entry<String, Object> data) {
+    private JsonObject saveEntry(Map.Entry<String, Object> data, Event event) {
 
-        ConfigHandler handler = getHandlerFor(data.getValue());
+        ConfigHandler handler = getHandlerFor(data, event);
         if (handler != null) {
             JsonObject ret = new JsonObject();
             ret.addProperty("id", data.getKey());
@@ -72,15 +75,18 @@ public class EventWorldData {
         String id = obj.get("id").getAsString();
         ConfigData data = event.getDataFor(id);
         if (data == null) return null; //no longer have field in event
-        ConfigHandler handler = data.getHandler();
+        ConfigHandler handler = data.getHandler(id, event);
         if (handler == null) return null; //?? somehow handler was removed
         return new SimpleEntry<>(id, handler.load(obj));
     }
 
-    private ConfigHandler getHandlerFor(Object object) {
-        if(object == null) return null;
-        DataManager dm = EventSystem.get().getDataManager();
-        return dm.findConfigHandler(object.getClass());
+    private ConfigHandler getHandlerFor(Map.Entry<String, Object> entry, Event event) {
+        if(entry == null || entry.getValue() == null) return null;
+        ConfigHandler handler = event.findCustomHandler(entry.getKey());
+        if(handler == null && (handler = event.findCustomHandler(entry.getValue().getClass())) == null) {
+            DataManager dm = EventSystem.get().getDataManager();
+            return dm.findConfigHandler(entry.getValue().getClass());
+        } else return handler;
     }
 
     public void updateData(Map<String, Object> data) {

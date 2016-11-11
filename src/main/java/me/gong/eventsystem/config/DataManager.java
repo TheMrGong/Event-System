@@ -4,15 +4,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import me.gong.eventsystem.EventSystem;
-import me.gong.eventsystem.config.meta.ConfigHandler;
-import me.gong.eventsystem.config.meta.Configurable;
-import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.config.data.ConfigData;
-import me.gong.eventsystem.events.task.meta.Task;
-import me.gong.eventsystem.config.impl.LocationConfigHandler;
-import me.gong.eventsystem.events.task.meta.Logic;
+import me.gong.eventsystem.config.data.custom.config.CustomConfigHandler;
+import me.gong.eventsystem.config.data.custom.frame.CustomTaskFrame;
 import me.gong.eventsystem.config.data.event.EventData;
 import me.gong.eventsystem.config.data.event.EventWorldData;
+import me.gong.eventsystem.config.impl.ListConfigHandler;
+import me.gong.eventsystem.config.impl.LocationConfigHandler;
+import me.gong.eventsystem.config.meta.ConfigHandler;
+import me.gong.eventsystem.config.meta.Configurable;
+import me.gong.eventsystem.config.meta.CustomHandler;
+import me.gong.eventsystem.events.Event;
+import me.gong.eventsystem.events.task.Logic;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.util.JsonUtils;
 
 import java.io.*;
@@ -35,6 +39,7 @@ public class DataManager {
 
     public void initialize() {
         handlers.add(new LocationConfigHandler());
+        handlers.add(new ListConfigHandler());
         File dir = EventSystem.get().getDataFolder();
         if (!dir.exists() && !dir.mkdir()) throw new RuntimeException("Unable to create directory");
         eventDataFile = new File(dir, "eventData.json");
@@ -82,7 +87,28 @@ public class DataManager {
                     ConfigDataBuilder builder = (contains ? builderMap.get(dat.value()) : new ConfigDataBuilder()).setLogic((Task.Logic) logic);
                     if (!contains) builderMap.put(dat.value(), builder);
                 } catch (IllegalAccessException e) {
-                    logger.log(Level.WARNING, "Error getting logic for id " + dat.value());
+                    logger.log(Level.WARNING, "Error getting logic for id " + dat.value(), e);
+                }
+            } else if (field.isAnnotationPresent(CustomHandler.class)) {
+                CustomHandler annot = field.getAnnotation(CustomHandler.class);
+                if (annot.type() == CustomHandler.Type.CONFIG) {
+                    CustomConfigHandler h = new CustomConfigHandler(field, instance);
+                    String error;
+                    if ((error = h.isComplete()) != null) {
+                        logger.warning("Custom Handler for field " + field + " wasn't complete: " + error);
+                        continue;
+                    }
+                    if (!instance.addCustomHandler(h))
+                        logger.warning("Custom Config Handler " + h + " already existed for event " + instance.getEventId());
+                } else {
+                    CustomTaskFrame h = new CustomTaskFrame(field, instance);
+                    String error;
+                    if ((error = h.isComplete()) != null) {
+                        logger.warning("Custom TaskFrame for field " + field + " wasn't complete: " + error);
+                        continue;
+                    }
+                    if (!instance.addCustomFrame(h))
+                        logger.warning("Custom TaskFrame " + h + " already existed for event " + instance.getEventId());
                 }
             }
         }
@@ -97,6 +123,7 @@ public class DataManager {
                 data.put(id, builder.build());
             }
         });
+        instance.pruneAll(); //clean up unused config handlers
     }
 
     public EventData getEventDataFor(Event event, boolean createNew) {
@@ -126,7 +153,7 @@ public class DataManager {
         EventWorldData wd = d.getWorldDataFor(world);
 
         Map<String, Object> map;
-        if(wd == null) {
+        if (wd == null) {
             map = new HashMap<>();
             event.getData().keySet().forEach(k -> map.put(k, null));
             d.createWorldDataFor(world, map);
@@ -138,7 +165,7 @@ public class DataManager {
     public String loadDataFor(Event event, String world) {
         EventWorldData data = getWorldDataFor(event, world);
         if (data == null) return String.format(NO_WORLD_DATA, world, event);
-        if(!data.isComplete()) return DATA_INCOMPLETE;
+        if (!data.isComplete()) return DATA_INCOMPLETE;
         event.loadValuesFrom(data);
         return null;
     }
@@ -152,13 +179,16 @@ public class DataManager {
             while ((line = r.readLine()) != null) jsonRaw += line;
             JsonElement e = JsonUtils.parser.parse(jsonRaw);
 
-            if(e instanceof JsonNull) return; //signifies this is a new file/empty one.. or something weird.. meh
+            if (e instanceof JsonNull) return; //signifies this is a new file/empty one.. or something weird.. meh
 
             if (!(e instanceof JsonArray))
                 throw new RuntimeException("Expected JsonArray from event data, got " + e.getClass().getSimpleName());
 
             JsonArray json = (JsonArray) e;
-            json.forEach(dat -> eventData.add(EventData.load(dat.getAsJsonObject())));
+            json.forEach(dat -> {
+                EventData d = EventData.load(dat.getAsJsonObject());
+                if (d != null) eventData.add(d);
+            });
         } catch (IOException e) {
             throw new RuntimeException("Reading event data", e);
         }
