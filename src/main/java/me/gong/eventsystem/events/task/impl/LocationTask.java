@@ -12,21 +12,21 @@ import java.util.UUID;
 
 public class LocationTask extends Task<Location> {
 
-    public LocationTask(String id, String event, UUID creating, String help, CancellableCallback<Location> callback, Logic<Location> logic) {
-        super(id, event, creating, help, callback, logic);
+    public LocationTask(String id, String event, UUID creating, String name, String help, CancellableCallback<Location> callback, Logic<Location> logic) {
+        super(id, event, creating, name, help, callback, logic);
     }
 
     @Override
     public void beginTask() {
-        getPlayer().sendMessage(StringUtils.info("Right click a block to set a location. Help: " + help));
+        getPlayer().sendMessage(StringUtils.info("Right click a block to set a location for &b'" + name + "'&7. Help: &e" + help));
     }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent ev) {
-        if(ev.getAction() == Action.RIGHT_CLICK_BLOCK && isCreating(ev.getPlayer())) {
+        if (ev.getAction() == Action.RIGHT_CLICK_BLOCK && isCreating(ev.getPlayer())) {
             ev.setCancelled(true);
             Location l = ev.getClickedBlock().getLocation();
-            if(logic.check(l, ev.getPlayer())) callback.onComplete(l);
+            if (checkWithLogic(l, ev.getPlayer())) callback.onComplete(l);
         }
     }
 

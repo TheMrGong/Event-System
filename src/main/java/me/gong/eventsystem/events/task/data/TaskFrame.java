@@ -32,8 +32,9 @@ public class TaskFrame {
         this.creating = creating;
 
         try {
-            taskConstructor = taskClass.getConstructor(String.class, String.class, UUID.class, String.class,
-                    CancellableCallback.class, Task.Logic.class);
+            taskConstructor = taskClass.getDeclaredConstructor(String.class, String.class, UUID.class,
+                    String.class, String.class, CancellableCallback.class, Task.Logic.class);
+            taskConstructor.setAccessible(true);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Invalid constructor for task " + taskClass.getSimpleName(), e);
         }
@@ -49,9 +50,10 @@ public class TaskFrame {
 
     public Task createTask(TaskData data) {
         try {
-            return taskConstructor.newInstance(data.getId(), data.getEvent(), data.getCreating(), data.getHelp(), data.getCallback(), data.getLogic());
+            return taskConstructor.newInstance(data.getId(), data.getEvent(), data.getCreating(),
+                    data.getName(), data.getHelp(), data.getCallback(), data.getLogic());
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Creating task " + taskClass.getSimpleName());
+            throw new RuntimeException("Creating task " + taskClass.getSimpleName(), e);
         }
     }
 }

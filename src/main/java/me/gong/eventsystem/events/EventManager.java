@@ -2,6 +2,7 @@ package me.gong.eventsystem.events;
 
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.impl.BasicEvent;
+import me.gong.eventsystem.events.impl.redrover.RedRoverEvent;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -11,6 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +29,14 @@ public class EventManager implements Listener {
     private Set<Event> events = new HashSet<>();
 
     public void initialize() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if(currentEvent != null) currentEvent.gameTick();
+            }
+        }.runTaskTimer(EventSystem.get(), 2, 1);
         registerEvent(new BasicEvent());
+        registerEvent(new RedRoverEvent());
         Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 
@@ -51,7 +61,7 @@ public class EventManager implements Listener {
 
         
         Bukkit.getPluginManager().registerEvents(currentEvent, EventSystem.get());
-        currentEvent.onBegin();
+        currentEvent.onBegin(hoster);
         
         Bukkit.broadcastMessage(StringUtils.format("&e&l" + hoster.getName() + " has hosted an event! (&6" + event.getEventId() + "&e&l)"));
         if (hoster instanceof Player) joinEvent((Player) hoster, ActionCause.PLUGIN);
@@ -87,6 +97,11 @@ public class EventManager implements Listener {
             return !isEventRunning() ? NO_EVENT_RUNNING : ISNT_PARTICIPATING;
         currentEvent.quitEvent(p, cause);
         participating.remove(p.getUniqueId());
+        p.setHealth(20);
+        p.setSaturation(20);
+        p.setFoodLevel(20);
+        p.setFireTicks(0);
+        p.getActivePotionEffects().clear();
         return null;
     }
 
@@ -112,7 +127,7 @@ public class EventManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerQuitEvent ev) {
-        quitEvent(ev.getPlayer(), EventManager.ActionCause.PLUGIN);
+        quitEvent(ev.getPlayer(), ActionCause.MANUAL);
     }
     
     public enum ActionCause {

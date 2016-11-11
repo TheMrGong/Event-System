@@ -1,12 +1,13 @@
 package me.gong.eventsystem.config.meta;
 
 import com.google.gson.JsonObject;
+import me.gong.eventsystem.events.Event;
 
 public interface ConfigHandler {
 
-    void save(Object data, JsonObject obj);
+    void save(Event evInstance, Object data, JsonObject obj);
 
-    Object load(JsonObject data);
+    Object load(Event evInstance, JsonObject obj);
 
     Class<?> getHandling();
 

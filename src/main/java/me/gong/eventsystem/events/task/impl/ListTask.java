@@ -11,6 +11,7 @@ import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
@@ -28,25 +29,27 @@ public class ListTask extends Task<List> {
 
     private Task currentTask;
 
-    public ListTask(String id, String event, UUID creating, String help, CancellableCallback<List> callback, Logic<List> logic) {
-        super(id, event, creating, help, callback, logic);
-        listType = GenericUtils.getGenericType(getConfigData().getField(), 0);
-        returning = new ArrayList<>();
-        frame = EventSystem.get().getTaskManager().getTaskFrameFor(listType);
-        finishHandler = new TaskFinishHandler();
+    public ListTask(String id, String event, UUID creating, String name, String help, CancellableCallback<List> callback, Logic<List> logic) {
+        super(id, event, creating, name, help, callback, logic);
     }
 
     @Override
     public void beginTask() {
+        listType = GenericUtils.getGenericType(getConfigData().getField(), 0);
+        returning = new ArrayList<>();
+
+        frame = EventSystem.get().getTaskManager().getTaskFrameFor(listType, EventSystem.get().getEventManager().getEventForId(event));
+        finishHandler = new TaskFinishHandler();
+
         Player p = getPlayer();
-        p.sendMessage(StringUtils.info("Run &a/finish&7 when you are complete with all the tasks."));
+        p.sendMessage(StringUtils.info("Run &a/listfinish " + id + "&7 when you are complete with all the tasks. Help for &b'" + name + "'&7: &e" + help));
         setTask();
     }
 
     @Override
     public void endTask() {
         Player p = getPlayer();
-        if(p != null) p.sendMessage(StringUtils.info("List task ended."));
+        if (p != null) p.sendMessage(StringUtils.info("List task ended."));
         resetCurrentTask();
     }
 
@@ -62,7 +65,7 @@ public class ListTask extends Task<List> {
     }
 
     private void resetCurrentTask() {
-        if(currentTask != null) {
+        if (currentTask != null) {
             currentTask.endTask();
             HandlerList.unregisterAll(currentTask);
             currentTask = null;
@@ -73,11 +76,11 @@ public class ListTask extends Task<List> {
         return List.class;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onCmd(PlayerCommandPreprocessEvent ev) {
-        if(ev.getMessage().toLowerCase().startsWith("/finish") && isCreating(ev.getPlayer())) {
-            callback.onComplete(returning);
+        if (ev.getMessage().toLowerCase().startsWith("/listfinish "+id.toLowerCase()) && isCreating(ev.getPlayer())) {
             ev.setCancelled(true);
+            if (checkWithLogic(returning, ev.getPlayer())) callback.onComplete(returning);
         }
     }
 
@@ -85,14 +88,14 @@ public class ListTask extends Task<List> {
 
         @Override
         public void onComplete(Object o) {
-            getPlayer().sendMessage(StringUtils.info(listType.getSimpleName()+" created."));
+            getPlayer().sendMessage(StringUtils.info(listType.getSimpleName() + " created."));
             returning.add(o);
             setTask();
         }
 
         @Override
         public void onCancel() {
-            getPlayer().sendMessage(StringUtils.warn("Unable to create "+listType.getSimpleName()));
+            getPlayer().sendMessage(StringUtils.warn("Unable to create " + listType.getSimpleName()));
             setTask();
         }
     }

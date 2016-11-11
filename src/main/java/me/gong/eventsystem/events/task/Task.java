@@ -12,18 +12,21 @@ import java.util.UUID;
 public abstract class Task<Type> implements Listener {
 
     protected CancellableCallback<Type> callback;
-    protected Logic<Type> logic;
+    private Logic<Type> logic;
     protected UUID creating;
     protected String id, event;
-    protected String help;
+    protected String name, help;
+    protected ConfigData configData;
 
-    public Task(String id, String event, UUID creating, String help, CancellableCallback<Type> callback, Logic<Type> logic) {
+    public Task(String id, String event, UUID creating, String name, String help, CancellableCallback<Type> callback, Logic<Type> logic) {
         this.id = id;
+        this.name = name;
         this.event = event;
         this.creating = creating;
         this.help = help;
         this.callback = callback;
         this.logic = logic;
+        this.configData = EventSystem.get().getEventManager().getEventForId(event).getDataFor(id);
     }
 
     public void beginTask() {
@@ -46,12 +49,20 @@ public abstract class Task<Type> implements Listener {
         return player.getUniqueId().equals(creating);
     }
 
-    protected final ConfigData getConfigData() {
-        return EventSystem.get().getEventManager().getEventForId(event).getDataFor(id);
+    protected boolean checkWithLogic(Type type, Player player) {
+        return logic == null || logic.check(type, player);
+    }
+
+    protected ConfigData getConfigData() {
+        return configData;
+    }
+
+    public void setConfigData(ConfigData data) {
+        this.configData = data;
     }
 
     public final String toString(Class<?> creating) {
-        return creating.getSimpleName() + " " + id + " - " + help;
+        return (creating != null ? creating.getSimpleName() + " " : "") + id + " - &e" + help + "&7";
     }
 
     public interface Logic<Type> {

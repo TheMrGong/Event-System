@@ -21,7 +21,7 @@ public class ConfigData {
 
     private String name, description;
 
-    public ConfigData(Field field, Task.Logic<?> logic, Configurable data) {
+    public ConfigData(Field field, Task.Logic<?> logic, String name, String description) {
         this.field = field;
 
         field.setAccessible(true);
@@ -29,8 +29,8 @@ public class ConfigData {
         configType = field.getType();
 
         this.logic = logic;
-        this.name = data.name();
-        this.description = data.description();
+        this.name = name;
+        this.description = description;
     }
 
     public void set(Object instance, Object value) {
@@ -50,7 +50,7 @@ public class ConfigData {
     }
 
     public TaskData generateData(String id, Event event, UUID player, CancellableCallback callback) {
-        return new TaskData(id, event.getEventId(), player, description, callback, logic);
+        return new TaskData(id, event.getEventId(), player, name, description, callback, logic);
     }
 
     public ConfigHandler getHandler(String id, Event event) {

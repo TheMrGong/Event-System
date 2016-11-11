@@ -10,11 +10,18 @@ import me.gong.eventsystem.events.task.Logic;
 import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.events.task.data.TaskFrame;
 import me.gong.eventsystem.util.CancellableCallback;
+import me.gong.eventsystem.util.ParticleEffect;
+import me.gong.eventsystem.util.StringUtils;
+import me.gong.eventsystem.util.data.Box;
+import org.bukkit.Effect;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,18 +52,24 @@ public class BasicEvent extends Event {
     @CustomHandler(clazz = SomeCustomData.class, type = CustomHandler.Type.CONFIG)
     public CustomMagicHandler magicalHandler = new CustomMagicHandler();
 
+    @Configurable(name = "Boxy box", description = "when inside players are spammed :^)", id = "box1")
+    public Box box1;
+
     private Map<UUID, Location> originalLocations = new HashMap<>();
 
     @Override
-    public void onBegin() {
-        spawnLocation.add(0.5, 1, 0.5);
+    public void onBegin(CommandSender hoster) {
+        spawnLocation = spawnLocation.clone().add(0.5, 1, 0.5);//locations isn't immutable :/
+
         //spawn location automatically set
+        box1.getAllBlocks().forEach(b -> b.getBlock().setType(Material.AIR));
     }
 
     @Override
     public void onEnd(EventManager.ActionCause cause) {
         //ending logic
         originalLocations.clear();
+        box1.getAllBlocks().forEach(b -> b.getBlock().setType(Material.GLASS));
     }
 
     @Override
@@ -79,6 +92,15 @@ public class BasicEvent extends Event {
             originalLocations.remove(player.getUniqueId());
         }
 
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent ev) {
+        if(isParticipating(ev.getPlayer()) && box1.intersectsWith(ev.getPlayer())) {
+            ev.getPlayer().sendMessage(StringUtils.info("You're in my box :^)"));
+            ParticleEffect.FLAME.display(0, 0, 0, 0, 20, box1.getPos1(), 100);
+            ParticleEffect.FLAME.display(0, 0, 0, 0, 20, box1.getPos2(), 100);
+        }
     }
 
     private class BasicLogic implements Task.Logic<Location> {
@@ -104,8 +126,8 @@ public class BasicEvent extends Event {
     public static class MyCustomTask extends Task<SomeCustomData> {
 
 
-        public MyCustomTask(String id, String event, UUID creating, String help, CancellableCallback<SomeCustomData> callback, Logic<SomeCustomData> logic) {
-            super(id, event, creating, help, callback, logic);
+        public MyCustomTask(String id, String event, UUID creating, String name, String help, CancellableCallback<SomeCustomData> callback, Logic<SomeCustomData> logic) {
+            super(id, event, creating, name, help, callback, logic);
         }
 
         @Override
@@ -123,13 +145,13 @@ public class BasicEvent extends Event {
     public static class CustomMagicHandler implements ConfigHandler {
 
         @Override
-        public void save(Object data, JsonObject obj) {
+        public void save(Event event, Object data, JsonObject obj) {
             obj.addProperty("my_magic", ((SomeCustomData) data).getCustomMagic());
         }
 
         @Override
-        public Object load(JsonObject data) {
-            return new SomeCustomData(data.get("my_magic").getAsString());
+        public Object load(Event event, JsonObject obj) {
+            return new SomeCustomData(obj.get("my_magic").getAsString());
         }
 
         @Override

@@ -4,6 +4,7 @@ import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.config.data.ConfigData;
 import me.gong.eventsystem.events.task.data.TaskFrame;
+import me.gong.eventsystem.events.task.impl.BoxTask;
 import me.gong.eventsystem.events.task.impl.ListTask;
 import me.gong.eventsystem.events.task.impl.LocationTask;
 import me.gong.eventsystem.events.task.data.ProgressingTask;
@@ -15,10 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TaskManager implements Listener {
@@ -32,13 +30,17 @@ public class TaskManager implements Listener {
     private List<ProgressingTask> inprogress = new ArrayList<>();
 
     public TaskManager() {
-        tasks.add(new TaskFrame(LocationTask.class));
-        tasks.add(new TaskFrame(ListTask.class));
+        registerTasks(LocationTask.class, ListTask.class, BoxTask.class);
         Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 
     public TaskFrame getTaskFrameFor(Class<?> creating) {
         return tasks.stream().filter(f -> f.getCreating().isAssignableFrom(creating)).findFirst().orElse(null);
+    }
+
+    public TaskFrame getTaskFrameFor(Class<?> creating, Event event) {
+        TaskFrame got = event.findCustomFrame(creating);
+        return got == null ? getTaskFrameFor(creating) : got;
     }
 
     public List<Task> generateTaskFor(Player player, CancellableCallback callback, Event event) {
@@ -103,19 +105,24 @@ public class TaskManager implements Listener {
         return null;
     }
 
-    public void resetTask(ProgressingTask task) {
+    private void resetTask(ProgressingTask task) {
         if(task != null) {
             task.unsetTask();
             inprogress.remove(task);
         }
     }
 
-    public ProgressingTask getSettingUp(Player player) {
+    private ProgressingTask getSettingUp(Player player) {
         return inprogress.stream().filter(p -> p.getUUID().equals(player.getUniqueId())).findFirst().orElse(null);
     }
 
-    public boolean isBuilding(Event event) {
+    private boolean isBuilding(Event event) {
         return inprogress.stream().anyMatch(p -> p.getEventId().equalsIgnoreCase(event.getEventId()));
+    }
+
+    @SafeVarargs
+    private final void registerTasks(Class<? extends Task>... tasks) {
+        this.tasks.addAll(Arrays.stream(tasks).map(TaskFrame::new).collect(Collectors.toList()));
     }
 
     @EventHandler

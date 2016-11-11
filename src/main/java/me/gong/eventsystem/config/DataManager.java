@@ -9,6 +9,7 @@ import me.gong.eventsystem.config.data.custom.config.CustomConfigHandler;
 import me.gong.eventsystem.config.data.custom.frame.CustomTaskFrame;
 import me.gong.eventsystem.config.data.event.EventData;
 import me.gong.eventsystem.config.data.event.EventWorldData;
+import me.gong.eventsystem.config.impl.BoxConfigHandler;
 import me.gong.eventsystem.config.impl.ListConfigHandler;
 import me.gong.eventsystem.config.impl.LocationConfigHandler;
 import me.gong.eventsystem.config.meta.ConfigHandler;
@@ -40,6 +41,7 @@ public class DataManager {
     public void initialize() {
         handlers.add(new LocationConfigHandler());
         handlers.add(new ListConfigHandler());
+        handlers.add(new BoxConfigHandler());
         File dir = EventSystem.get().getDataFolder();
         if (!dir.exists() && !dir.mkdir()) throw new RuntimeException("Unable to create directory");
         eventDataFile = new File(dir, "eventData.json");
@@ -56,6 +58,11 @@ public class DataManager {
         return handlers.stream().filter(h -> h.getHandling().isAssignableFrom(clazz)).findFirst().orElse(null);
     }
 
+    public ConfigHandler findConfigHandler(Class clazz, Event event) {
+        ConfigHandler ch = event.findCustomHandler(clazz);
+        return ch == null ? findConfigHandler(clazz) : ch;
+    }
+
     //ayy it worked first time i ran it
     public void createValues(Map<String, ConfigData> data, Event instance) {
         Logger logger = EventSystem.get().getLogger();
@@ -68,7 +75,7 @@ public class DataManager {
                     logger.warning("Found duplicate id '" + dat.id() + "' for event " + instance.getClass().getSimpleName());
                     continue;
                 }
-                builderMap.put(dat.id(), new ConfigDataBuilder().setData(field, dat));
+                builderMap.put(dat.id(), new ConfigDataBuilder().setField(field).setMeta(dat));;
             } else if (field.isAnnotationPresent(Logic.class)) {
                 Logic dat = field.getAnnotation(Logic.class);
                 boolean contains = builderMap.containsKey(dat.value());
@@ -100,6 +107,7 @@ public class DataManager {
                     }
                     if (!instance.addCustomHandler(h))
                         logger.warning("Custom Config Handler " + h + " already existed for event " + instance.getEventId());
+
                 } else {
                     CustomTaskFrame h = new CustomTaskFrame(field, instance);
                     String error;

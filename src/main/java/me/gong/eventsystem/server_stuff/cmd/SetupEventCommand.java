@@ -28,10 +28,10 @@ public class SetupEventCommand implements CommandExecutor {
         } else {
             if(args[0].equalsIgnoreCase("finish")) {
                 String error = EventSystem.get().getTaskManager().finishTask(p);
-                if(error != null) p.sendMessage(StringUtils.format("Unable to finish task: "+error));
+                if(error != null) p.sendMessage(StringUtils.info("Unable to finish task: "+error));
             } else if(args[0].equalsIgnoreCase("cancel")) {
                 String error = EventSystem.get().getTaskManager().cancelTask(p);
-                if(error != null) p.sendMessage(StringUtils.format("Unable to cancel task: "+error));
+                if(error != null) p.sendMessage(StringUtils.info("Unable to cancel task: "+error));
             } else {
                 Event e = em.getEventForId(args[0]);
                 if (e == null) informEvents(commandSender, em);

@@ -9,6 +9,7 @@ import me.gong.eventsystem.config.data.ConfigData;
 import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.util.SimpleEntry;
 
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -64,7 +65,7 @@ public class EventWorldData {
         if (handler != null) {
             JsonObject ret = new JsonObject();
             ret.addProperty("id", data.getKey());
-            handler.save(data.getValue(), ret);
+            handler.save(event, data.getValue(), ret);
             return ret;
         }
 
@@ -77,7 +78,7 @@ public class EventWorldData {
         if (data == null) return null; //no longer have field in event
         ConfigHandler handler = data.getHandler(id, event);
         if (handler == null) return null; //?? somehow handler was removed
-        return new SimpleEntry<>(id, handler.load(obj));
+        return new SimpleEntry<>(id, handler.load(event, obj));
     }
 
     private ConfigHandler getHandlerFor(Map.Entry<String, Object> entry, Event event) {

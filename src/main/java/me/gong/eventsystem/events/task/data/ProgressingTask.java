@@ -36,11 +36,11 @@ public class ProgressingTask {
                 unsetTask();
             }
         }, event);
+        this.taskIndex = -1;
         this.completed = completed;
         this.callback = callback;
         this.player = player.getUniqueId();
         this.eventId = event.getEventId();
-        this.taskIndex = -1;
         player.sendMessage(StringUtils.info("Beginning setup for event '" + eventId + "'"));
         player.sendMessage(StringUtils.info("The following tasks can be completed: "));
         listAllTasks();

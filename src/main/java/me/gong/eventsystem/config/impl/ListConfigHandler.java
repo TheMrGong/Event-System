@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.config.meta.ConfigHandler;
+import me.gong.eventsystem.events.Event;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,17 +13,19 @@ import java.util.logging.Logger;
 
 public class ListConfigHandler implements ConfigHandler {
     @Override
-    public void save(Object data, JsonObject obj) {
-        List l = (List) data;
+    public void save(Event event, Object data, JsonObject obj) {
+        List<Object> l = (List<Object>) data;
         JsonArray dat = new JsonArray();
         if (l.isEmpty()) obj.add("list", dat);
         else {
             Class<?> containing = l.get(0).getClass();
-            ConfigHandler ch = EventSystem.get().getDataManager().findConfigHandler(containing);
+            ConfigHandler ch = EventSystem.get().getDataManager().findConfigHandler(containing, event);
+
             if (ch != null) {
+
                 l.forEach(o -> {
                     JsonObject d = new JsonObject();
-                    ch.save(o, d);
+                    ch.save(event, o, d);
                     dat.add(d);
                 });
                 obj.add("list", dat);
@@ -32,24 +35,24 @@ public class ListConfigHandler implements ConfigHandler {
     }
 
     @Override
-    public Object load(JsonObject data) {
-        if (!data.has("list")) return null;
+    public Object load(Event event, JsonObject obj) {
+        if (!obj.has("list")) return null;
 
-        JsonArray dat = data.getAsJsonArray("list");
+        JsonArray dat = obj.getAsJsonArray("list");
         List<Object> l = new ArrayList<>();
 
         if (dat.size() == 0) return l;
 
         Logger log = EventSystem.get().getLogger();
-        String type = data.get("type").getAsString();
+        String type = obj.get("type").getAsString();
 
         try {
             Class<?> containing = Class.forName(type);
-            ConfigHandler ch = EventSystem.get().getDataManager().findConfigHandler(containing);
+            ConfigHandler ch = EventSystem.get().getDataManager().findConfigHandler(containing, event);
             if (ch == null)
                 log.warning("Unable to find config handler for type " + containing.getSimpleName() + " in list");
             else {
-                dat.forEach(e -> l.add(ch.load(e.getAsJsonObject())));
+                dat.forEach(e -> l.add(ch.load(event, e.getAsJsonObject())));
                 return l;
             }
         } catch (ClassNotFoundException ex) {

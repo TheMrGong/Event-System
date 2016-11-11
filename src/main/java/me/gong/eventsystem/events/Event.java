@@ -2,22 +2,22 @@ package me.gong.eventsystem.events;
 
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.config.data.ConfigData;
+import me.gong.eventsystem.config.data.custom.AbstractCustomList;
 import me.gong.eventsystem.config.data.custom.ICustom;
 import me.gong.eventsystem.config.data.custom.config.CustomConfigHandler;
-import me.gong.eventsystem.config.data.custom.AbstractCustomList;
 import me.gong.eventsystem.config.data.custom.config.CustomConfigList;
 import me.gong.eventsystem.config.data.custom.frame.CustomFrameList;
 import me.gong.eventsystem.config.data.custom.frame.CustomTaskFrame;
 import me.gong.eventsystem.config.data.event.EventWorldData;
 import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.events.task.data.TaskFrame;
+import me.gong.eventsystem.util.BukkitUtils;
+import me.gong.eventsystem.util.GenericUtils;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public abstract class Event implements Listener {
 
@@ -33,14 +33,25 @@ public abstract class Event implements Listener {
 
     }
 
-    public abstract void onBegin();
+    public void gameTick() {
+
+    }
+
+    public abstract void onBegin(CommandSender hoster);
 
     public abstract void onEnd(EventManager.ActionCause cause);
     
     public abstract String getEventId();
 
     private Collection<Class> getAllClasses() {
-        return data.values().stream().map(ConfigData::getConfigType).collect(Collectors.toList());
+        Collection<Class> clazzes = new ArrayList<>();
+        data.values().stream().map(c -> {
+            List<Class<?>> clazz = new ArrayList<>();
+            clazz.add(c.getConfigType());
+            Arrays.stream(GenericUtils.getAllGenerics(c.getField())).forEach(clazz::add);
+            return clazz;
+        }).forEach(clazzes::addAll);
+        return clazzes;
     }
 
     public ConfigHandler findCustomHandler(Object object) {
@@ -57,9 +68,17 @@ public abstract class Event implements Listener {
         return null;
     }
 
+    public CustomConfigList getCustomHandlers() {
+        return customHandlers;
+    }
+
     public void pruneAll() {
-        customHandlers.pruneClasses(getAllClasses());
+        Collection<Class> allC = getAllClasses();
+        customHandlers.pruneClasses(allC);
         customHandlers.pruneIds(data.keySet());
+
+        customFrames.pruneClasses(allC);
+        customFrames.pruneIds(data.keySet());
     }
 
     public Event registerConfigurables() {
@@ -93,9 +112,25 @@ public abstract class Event implements Listener {
             if(d != null) d.set(this, o);
         });
     }
-    
-    protected boolean isEnabled() {
-        return getClass().isInstance(EventSystem.get().getEventManager().getCurrentEvent());
+
+    protected List<Player> getPlaying() {
+        return EventSystem.get().getEventManager().getCurrentlyPlaying();
+    }
+
+    public void broadcast(String msg) {
+        getPlaying().forEach(p -> p.sendMessage(msg));
+    }
+
+    public void broadcast(BukkitUtils.Title msg) {
+        getPlaying().forEach(msg::sendTo);
+    }
+
+    public void broadcastAction(String actionMsg) {
+        getPlaying().forEach(p -> BukkitUtils.sendActionMessage(p, actionMsg));
+    }
+
+    protected boolean isParticipating(Player player) {
+        return EventSystem.get().getEventManager().isParticipating(player);
     }
 
     @Override

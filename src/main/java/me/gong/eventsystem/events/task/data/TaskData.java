@@ -10,10 +10,11 @@ public class TaskData {
     private UUID creating;
     private CancellableCallback callback;
     private Task.Logic logic;
-    private String id, event, help;
+    private String id, event, name, help;
 
-    public TaskData(String id, String event, UUID creating, String help, CancellableCallback callback, Task.Logic logic) {
+    public TaskData(String id, String event, UUID creating, String name, String help, CancellableCallback callback, Task.Logic logic) {
         this.id = id;
+        this.name = name;
         this.event = event;
         this.creating = creating;
         this.help = help;
@@ -23,6 +24,10 @@ public class TaskData {
 
     public String getId() {
         return id;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public String getEvent() {
