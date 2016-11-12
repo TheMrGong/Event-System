@@ -12,11 +12,13 @@ import me.gong.eventsystem.config.data.event.EventWorldData;
 import me.gong.eventsystem.config.impl.BoxConfigHandler;
 import me.gong.eventsystem.config.impl.ListConfigHandler;
 import me.gong.eventsystem.config.impl.LocationConfigHandler;
+import me.gong.eventsystem.config.impl.LongConfigHandler;
 import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.config.meta.Configurable;
 import me.gong.eventsystem.config.meta.CustomHandler;
 import me.gong.eventsystem.events.Event;
 import me.gong.eventsystem.events.task.Logic;
+import me.gong.eventsystem.events.task.Logics;
 import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.util.JsonUtils;
 
@@ -42,6 +44,7 @@ public class DataManager {
         handlers.add(new LocationConfigHandler());
         handlers.add(new ListConfigHandler());
         handlers.add(new BoxConfigHandler());
+        handlers.add(new LongConfigHandler());
         File dir = EventSystem.get().getDataFolder();
         if (!dir.exists() && !dir.mkdir()) throw new RuntimeException("Unable to create directory");
         eventDataFile = new File(dir, "eventData.json");
@@ -76,25 +79,28 @@ public class DataManager {
                     continue;
                 }
                 builderMap.put(dat.id(), new ConfigDataBuilder().setField(field).setMeta(dat));;
-            } else if (field.isAnnotationPresent(Logic.class)) {
-                Logic dat = field.getAnnotation(Logic.class);
-                boolean contains = builderMap.containsKey(dat.value());
+            } else if (field.isAnnotationPresent(Logic.class) || field.isAnnotationPresent(Logics.class)) {
+                Logic[] dats = field.isAnnotationPresent(Logic.class) ? new Logic[] {field.getAnnotation(Logic.class)} :
+                        field.getAnnotation(Logics.class).value();
+                for(Logic dat : dats) {
+                    boolean contains = builderMap.containsKey(dat.value());
 
-                if (contains && builderMap.get(dat.value()).hasLogic()) {
-                    logger.warning("More than one config logic for id " + dat.value());
-                    continue;
-                }
-                try {
-                    field.setAccessible(true);
-                    Object logic = field.get(instance);
-                    if (!(logic instanceof Task.Logic)) {
-                        logger.warning("Logic for id " + dat.value() + " didn't implement Task.Logic, instead was " + logic.getClass().getSimpleName());
+                    if (contains && builderMap.get(dat.value()).hasLogic()) {
+                        logger.warning("More than one config logic for id " + dat.value());
                         continue;
                     }
-                    ConfigDataBuilder builder = (contains ? builderMap.get(dat.value()) : new ConfigDataBuilder()).setLogic((Task.Logic) logic);
-                    if (!contains) builderMap.put(dat.value(), builder);
-                } catch (IllegalAccessException e) {
-                    logger.log(Level.WARNING, "Error getting logic for id " + dat.value(), e);
+                    try {
+                        field.setAccessible(true);
+                        Object logic = field.get(instance);
+                        if (!(logic instanceof Task.Logic)) {
+                            logger.warning("Logic for id " + dat.value() + " didn't implement Task.Logic, instead was " + logic.getClass().getSimpleName());
+                            continue;
+                        }
+                        ConfigDataBuilder builder = (contains ? builderMap.get(dat.value()) : new ConfigDataBuilder()).setLogic((Task.Logic) logic);
+                        if (!contains) builderMap.put(dat.value(), builder);
+                    } catch (IllegalAccessException e) {
+                        logger.log(Level.WARNING, "Error getting logic for id " + dat.value(), e);
+                    }
                 }
             } else if (field.isAnnotationPresent(CustomHandler.class)) {
                 CustomHandler annot = field.getAnnotation(CustomHandler.class);

@@ -19,7 +19,7 @@ public class Stage {
 
     public Stage(List<Location> locations, StageType type) {
         this(type);
-        this.locations = locations.stream().map(l -> l.clone().add(0, 1, 0)).collect(Collectors.toList());
+        this.locations = locations;
     }
 
     public Stage(StageType type) {
@@ -40,7 +40,7 @@ public class Stage {
         else if (type == StageType.GIVE_SLOW)
             giveEffect(players, new PotionEffect(PotionEffectType.SLOW, 999999, 0, true, false));
         else giveEffect(players, new PotionEffect(PotionEffectType.CONFUSION, 999999, 0, true, false));
-        event.broadcast(StringUtils.info("This stage was: " + type.getName() + " (" + type.pickTaunt() + ")"));
+        event.broadcast(StringUtils.info("Additional difficulty: &e" + type.getName() + "&7 (&3" + type.pickTaunt() + "&7)"));
     }
 
     public void reset() {
@@ -48,7 +48,7 @@ public class Stage {
     }
 
     private void setBlocks(Material material) {
-        locations.forEach(l -> l.getBlock().setType(material));
+        locations.forEach(l -> l.clone().add(0, 1, 0).getBlock().setType(material, false));
     }
 
     private void giveEffect(List<Player> players, PotionEffect effect) {
@@ -58,14 +58,14 @@ public class Stage {
     public enum StageType {
         ADD_COBWEBS("Cobwebs", "Get some cobwebs!", "More cobwebs!", "Get ready to be annoyed!"),
         ADD_LAVA("Lava", "Burn, burn!", "I spilled something", "Might want to watch out for the lava"),
-        GIVE_SLOW("Slowness", "\"Brakes turned on\"", "No sanic for you!", ""),
+        GIVE_SLOW("Slowness", "\"Brakes turned on\"", "No sanic for you!", "Slow down there"),
         GIVE_NAUSEA("Nausea", "Which ways left?", "Good luck seeing where you're going", "That's going to be difficult");
 
         private String name;
         private String[] taunts;
 
         StageType(String s, String... taunts) {
-            this.name = name();
+            this.name = s;
             this.taunts = taunts;
         }
 

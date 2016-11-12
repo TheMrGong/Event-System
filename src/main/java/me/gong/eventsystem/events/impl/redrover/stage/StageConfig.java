@@ -13,7 +13,7 @@ public class StageConfig implements ConfigHandler {
     @Override
     public void save(Event event, Object data, JsonObject obj) {
         Stage s = (Stage) data;
-        if(!s.getLocations().isEmpty()) {
+        if(s.getLocations() != null && !s.getLocations().isEmpty()) {
             ConfigHandler listHandler = EventSystem.get().getDataManager().findConfigHandler(List.class);
             listHandler.save(event, s.getLocations(), obj);
         }

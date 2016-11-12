@@ -57,9 +57,13 @@ public class Box {
     }
 
     public boolean intersectsWith(Player player) {
-        Location pos1 = player.getLocation().clone().subtract(0.3, 0, 0.3);
+        return playerToBox(player.getLocation()).intersectsWith(this);
+    }
+
+    public Box playerToBox(Location l) {
+        Location pos1 = l.clone().subtract(0.3, 0, 0.3);
         Location pos2 = pos1.clone().add(0.6, 1.8, 0.6);
-        return new Box(pos1, pos2).intersectsWith(this);
+        return new Box(pos1, pos2);
     }
 
 

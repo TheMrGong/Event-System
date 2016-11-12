@@ -129,8 +129,16 @@ public abstract class Event implements Listener {
         getPlaying().forEach(p -> BukkitUtils.sendActionMessage(p, actionMsg));
     }
 
+    protected void resetPlayer(Player p) {
+        EventSystem.get().getEventManager().resetPlayer(p);
+    }
+
     protected boolean isParticipating(Player player) {
-        return EventSystem.get().getEventManager().isParticipating(player);
+        return getManager().isParticipating(player);
+    }
+
+    protected EventManager getManager() {
+        return EventSystem.get().getEventManager();
     }
 
     @Override

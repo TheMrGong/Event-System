@@ -1,5 +1,6 @@
 package me.gong.eventsystem.events.impl.redrover;
 
+import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.config.meta.Configurable;
 import me.gong.eventsystem.config.meta.CustomHandler;
 import me.gong.eventsystem.events.Event;
@@ -10,17 +11,25 @@ import me.gong.eventsystem.events.impl.redrover.side.SideConfig;
 import me.gong.eventsystem.events.impl.redrover.stage.Stage;
 import me.gong.eventsystem.events.impl.redrover.stage.StageConfig;
 import me.gong.eventsystem.events.impl.redrover.stage.StageTask;
+import me.gong.eventsystem.events.task.Logic;
+import me.gong.eventsystem.events.task.Task;
 import me.gong.eventsystem.events.task.data.TaskFrame;
-import me.gong.eventsystem.util.BukkitUtils;
-import me.gong.eventsystem.util.NumberUtils;
-import me.gong.eventsystem.util.StringUtils;
-import me.gong.eventsystem.util.TimeUtils;
+import me.gong.eventsystem.util.*;
 import me.gong.eventsystem.util.data.Box;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.command.CommandSender;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +38,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class RedRoverEvent extends Event {
-
-    private static final long RESTING_TIME = 7000, RUN_TIME = 12000;
 
     @Configurable(name = "Blue Side", description = "Area on blue side", id = "blue")
     public SideBox blueSide;
@@ -59,6 +66,46 @@ public class RedRoverEvent extends Event {
     @Configurable(name = "Event Spawn Location", description = "Where players will spawn when joining the event. Also slayer spawn location.", id = "spawnLoc")
     public Location spawnLoc;
 
+    @Configurable(name = "Resting Time", description = "Amount of time in milliseconds players rest between rounds", id = "resting_time")
+    public Long restingTime;
+
+    @Configurable(name = "Running Initial Time", description = "Amount of time in milliseconds players have to run between sides",
+            id = "running_time")
+    public Long initialRunningTime;
+
+    @Configurable(name = "Running Decrease", description = "Decrease the amount of time to cross by this amount every round", id = "decrease")
+    public Long decrease;
+
+    @Configurable(name = "Running Minimum", description = "Minimum amount of time required to run. " +
+            "Used to prevent the decrease for being too insane",
+            id = "minimum")
+    public Long minimum;
+
+    @Configurable(name = "Stage Separation", description = "How many rounds before progressing a stage", id = "separation")
+    public Long stageSeperation;
+
+    @Configurable(name = "Restock Time", description = "Time between restocks", id = "restockTime")
+    public Long restockTime;
+
+    @Logic("separation")
+    public Task.Logic<Long> separationLogic = (aLong, player) -> {
+        if(aLong <= 0) player.sendMessage(StringUtils.info("Separation must be greater than 1"));
+        else if(aLong > 6) player.sendMessage(StringUtils.info("Maximum separation is 6"));
+        else return true;
+        return false;
+    };
+
+    @Logic("resting_time")
+    @Logic("running_time")
+    @Logic("decrease")
+    @Logic("minimum")
+    @Logic("restockTime")
+    public Task.Logic<Long> positiveOnly = ((aLong, player) -> {
+        if(aLong <= 0) player.sendMessage(StringUtils.info("Must be a positive number"));
+        else return true;
+        return false;
+    });
+
     private boolean isJoinable;
 
     private Map<UUID, Location> origin = new HashMap<>();
@@ -68,7 +115,7 @@ public class RedRoverEvent extends Event {
     private boolean runToRed;
 
     private EventState eventState;
-    private long timeSinceChange;
+    private long timeSinceChange, curRunningTime, lastRestock, slappyNoise, slappyDelay;
 
     @Override
     public void onBegin(CommandSender sender) {
@@ -79,6 +126,8 @@ public class RedRoverEvent extends Event {
         timeSinceChange = 0;
         eventState = EventState.BEGINNING;
         spawnLoc = spawnLoc.clone().add(0.5, 1, 0.5);
+        curRunningTime = initialRunningTime;
+        slayer = null;
 
         updateBoxes();
 
@@ -91,6 +140,8 @@ public class RedRoverEvent extends Event {
         eventState = EventState.BEGINNING;
         origin.clear();
         stages.forEach(Stage::reset);
+        lastRestock = 0;
+        slappyNoise = 0;
     }
 
     @Override
@@ -103,6 +154,8 @@ public class RedRoverEvent extends Event {
             broadcast(StringUtils.info("&e" + player.getDisplayName() + "&7 has &ajoined&7 the event!"));
         origin.put(player.getUniqueId(), player.getLocation());
         player.teleport(spawnLoc);
+        player.setGameMode(GameMode.SURVIVAL);
+        resetPlayer(player);
         return true;
     }
 
@@ -117,39 +170,147 @@ public class RedRoverEvent extends Event {
             }
         }
         Location l = origin.remove(player.getUniqueId());
+        resetPlayer(player);
         if (l != null) player.teleport(l);
     }
 
     @EventHandler
     public void onCmd(PlayerCommandPreprocessEvent ev) {
         if (ev.getPlayer().isOp() && isParticipating(ev.getPlayer()) && ev.getMessage().toLowerCase().startsWith("/begin")) {
+            ev.setCancelled(true);
             broadcast(StringUtils.info("&f&lEvent now beginning"));
+            lastRestock = System.currentTimeMillis();
             chooseSlayer();
             SideBox boxStarting;
             runToRed = NumberUtils.r.nextBoolean();
+            isJoinable = false;
 
             if (runToRed) boxStarting = redSide;
             else boxStarting = redSide;
 
-            getRunners().forEach(boxStarting::teleport);
+            getRunners().forEach(r -> {
+                giveKit(r);
+                boxStarting.teleport(r);
+            });
             progressState();
         }
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent ev) {
+        if(isSlayer(ev.getPlayer()) && !slayerArea.intersectsWith(slayerArea.playerToBox(ev.getTo()))) {
+            Location f = ev.getFrom().clone(), t = ev.getTo();
+            f.setYaw(t.getYaw());
+            f.setPitch(f.getPitch());
+            ev.setTo(f);
+        }
+    }
+
+    @EventHandler
+    public void onInteract(PlayerInteractEvent ev) {
+        if(isParticipating(ev.getPlayer())) ev.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onDamage(EntityDamageByEntityEvent ev) {
+        if(ev.getDamager() instanceof Player) {
+            Player p = (Player) ev.getDamager();
+            if(isParticipating(p) && !isSlayer(p)) ev.setCancelled(true);
+            else if(isSlayer(p) && ev.getEntity() instanceof Player) {
+                Player damaged = (Player) ev.getEntity();
+                if(isParticipating(damaged)) {
+                    if(damaged.getHealth() - ev.getFinalDamage() <= 0) {
+                        ev.setCancelled(true);
+                        broadcast(StringUtils.info("&b&l" + damaged.getDisplayName()+"&e&l has died to &c&lThe Slayer&e&l!"));
+                        getManager().quitEvent(damaged, EventManager.ActionCause.PLUGIN);
+                    }
+                } else ev.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent ev) {
+        if(ev.getItemDrop().getItemStack().getType() != Material.BOWL) ev.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onDamage(BlockDamageEvent ev) {
+        if(isParticipating(ev.getPlayer())) ev.setCancelled(true);
     }
 
     @Override
     public void gameTick() {
         if (eventState != EventState.BEGINNING) {
-            long timeDiff = System.currentTimeMillis() - timeSinceChange,
-                    maxTime = eventState == EventState.RESTING ? RESTING_TIME : RUN_TIME;
-            if (timeDiff > maxTime) progressState();
-            if(eventState == EventState.RESTING && rounds % 5 == 0 && timeDiff >= maxTime) progressStage();
-
-            maxTime = eventState == EventState.RESTING ? RESTING_TIME : RUN_TIME;
-            long timeLeft = (timeSinceChange + maxTime) - System.currentTimeMillis();
-            if (eventState == EventState.RESTING)
-                broadcastAction("&3Resting for &e" + TimeUtils.convertToString(timeLeft));
-            else broadcastAction("&a&lRunning to " + (runToRed ? "&c&lred" : "&9&lblue") + "&a&l side. (" + TimeUtils.convertToString(timeLeft) + ")");
+            checkRunning();
+            checkRestock();
+            checkSlappyNoise();
         }
+    }
+
+    private void checkRunning() {
+        long timeDiff = System.currentTimeMillis() - timeSinceChange, maxTime = calculateMaxTime();
+        if (timeDiff > maxTime) progressState();
+        if (eventState == EventState.RESTING && rounds % 5 == 0 && timeDiff >= maxTime) progressStage();
+
+        maxTime = calculateMaxTime();
+        long timeLeft = (timeSinceChange + maxTime) - System.currentTimeMillis();
+        if (eventState == EventState.RESTING)
+            broadcastAction("&3Resting for &e" + TimeUtils.convertToString(timeLeft));
+        else
+            broadcastAction("&a&lRunning to " + (runToRed ? "&c&lred" : "&9&lblue") + "&a&l side. (" + TimeUtils.convertToString(timeLeft) + ")");
+    }
+
+    private void checkSlappyNoise() {
+
+        if(System.currentTimeMillis() - slappyNoise > slappyDelay) {
+            Player slayer = Bukkit.getPlayer(this.slayer);
+            slappyNoise = System.currentTimeMillis();
+            slappyDelay = NumberUtils.getRandom(150, 2000);
+            getRunners().stream().filter(r -> r.getLocation().distanceSquared(slayer.getLocation()) < 7 * 7).forEach(r -> slayer.playSound(r.getLocation(), Sound.BAT_TAKEOFF, 0.1f, 1.0f));
+        }
+    }
+
+    private void checkRestock() {
+        if(System.currentTimeMillis() - lastRestock > restockTime) {
+            lastRestock = System.currentTimeMillis();
+            getPlaying().forEach(this::giveKit);
+            broadcast(StringUtils.format("&b&lAll players have been restocked!"));
+        }
+    }
+
+    private void killOutsidePlayers() {
+        getRunners().stream().filter(p -> {
+            SideBox s = runToRed ? redSide : blueSide;
+            return !s.containsPlayer(p);
+        }).forEach(p -> {
+            broadcast(StringUtils.info("&b&l"+p.getDisplayName()+"&e&l has lost!"));
+            getManager().quitEvent(p, EventManager.ActionCause.PLUGIN);
+        });
+    }
+
+    private void giveKit(Player p) {
+        PlayerInventory i = p.getInventory();
+        if(isSlayer(p)) {
+            i.setHelmet(new ItemBuilder(Material.DIAMOND_HELMET).unbreakable(true).build());
+            i.setChestplate(new ItemBuilder(Material.DIAMOND_CHESTPLATE).unbreakable(true).build());
+            i.setLeggings(new ItemBuilder(Material.DIAMOND_LEGGINGS).unbreakable(true).build());
+            i.setBoots(new ItemBuilder(Material.DIAMOND_BOOTS).unbreakable(true).build());
+            i.setItem(0, new ItemBuilder(Material.DIAMOND_SWORD).unbreakable(true).enchantment(Enchantment.DAMAGE_ALL, 1).build());
+            p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 99999999, 2));
+            p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_DIGGING, 99999999, 3));
+            p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 99999999, 1));
+        } else {
+            p.addPotionEffect(new PotionEffect(PotionEffectType.HEALTH_BOOST, 9999999, 10));
+            for (int in = 0; in < 36; in++) {
+                if(in == 8) i.setItem(in, new ItemBuilder(Material.COOKED_BEEF).amount(64).name("&eMunchable Meat").build());
+                else i.setItem(in, new ItemBuilder(Material.MUSHROOM_SOUP).name("&6Stew").build());
+            }
+        }
+    }
+
+    private long calculateMaxTime() {
+        return eventState == EventState.RESTING ? restingTime : curRunningTime;
     }
 
     private boolean isSlayer(Player p) {
@@ -165,6 +326,7 @@ public class RedRoverEvent extends Event {
         Player f = l.get(NumberUtils.r.nextInt(l.size()));
         slayer = f.getUniqueId();
         f.teleport(spawnLoc);
+        giveKit(f);
         broadcast(new BukkitUtils.Title("&e" + f.getDisplayName() + "&7 was chosen as &c&lThe Slayer&7!", true, 2, 42, 4));
     }
 
@@ -176,8 +338,10 @@ public class RedRoverEvent extends Event {
 
     private void beginResting() {
         rounds++;
+        if(curRunningTime > minimum) curRunningTime -= decrease;
         updateBoxes();
-        broadcast(new BukkitUtils.Title("&7&l5 seconds to rest.", true, 2, 36, 4));
+        killOutsidePlayers();
+        broadcast(new BukkitUtils.Title("&7&l" + TimeUtils.convertToString(restingTime).toLowerCase() + " to rest.", true, 2, 36, 4));
     }
 
     private void updateBoxes() {

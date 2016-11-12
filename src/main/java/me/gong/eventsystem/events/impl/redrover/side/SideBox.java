@@ -12,7 +12,7 @@ public class SideBox {
     public SideBox(Box detectionArea, Box barrierArea, Location spawnLocation) {
         this.detectionArea = detectionArea;
         this.barrierArea = barrierArea;
-        this.spawnLocation = spawnLocation.clone().add(0.5, 1, 0.5);
+        this.spawnLocation = spawnLocation;
     }
 
     public void setBarrier(boolean isSet) {
@@ -24,7 +24,7 @@ public class SideBox {
     }
 
     public void teleport(Player player) {
-        player.teleport(spawnLocation);
+        player.teleport(spawnLocation.clone().add(0.5, 1, 0.5));
     }
 
     public Location getSpawnLocation() {

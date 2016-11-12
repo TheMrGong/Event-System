@@ -5,6 +5,10 @@ import me.gong.eventsystem.config.DataManager;
 import me.gong.eventsystem.events.task.TaskManager;
 import me.gong.eventsystem.server_stuff.ServerManager;
 import me.gong.eventsystem.server_stuff.cmd.*;
+import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class EventSystem extends JavaPlugin {
@@ -44,6 +48,16 @@ public class EventSystem extends JavaPlugin {
         getCommand("quit").setExecutor(jq);
         getCommand("setup").setExecutor(new SetupEventCommand());
         getCommand("task").setExecutor(new TaskCommand());
+
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onCMd(PlayerCommandPreprocessEvent cmd) {
+                if(cmd.getMessage().toLowerCase().startsWith("/saveit")) {
+                    dataManager.saveData();
+                    cmd.getPlayer().sendMessage("yes.");
+                }
+            }
+        }, this);
     }
 
     @Override

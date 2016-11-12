@@ -12,4 +12,8 @@ public class NumberUtils {
         for(int i=0; i < level; i++) sb.append("#");
         return Double.valueOf(new DecimalFormat(sb.toString()).format(value));
     }
+
+    public static int getRandom(int min, int max) {
+        return r.nextInt((max - min) + 1) + min;
+    }
 }

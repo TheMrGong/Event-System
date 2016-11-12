@@ -8,6 +8,7 @@ import me.gong.eventsystem.events.task.impl.BoxTask;
 import me.gong.eventsystem.events.task.impl.ListTask;
 import me.gong.eventsystem.events.task.impl.LocationTask;
 import me.gong.eventsystem.events.task.data.ProgressingTask;
+import me.gong.eventsystem.events.task.impl.LongTask;
 import me.gong.eventsystem.util.CancellableCallback;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
@@ -30,7 +31,7 @@ public class TaskManager implements Listener {
     private List<ProgressingTask> inprogress = new ArrayList<>();
 
     public TaskManager() {
-        registerTasks(LocationTask.class, ListTask.class, BoxTask.class);
+        registerTasks(LocationTask.class, ListTask.class, BoxTask.class, LongTask.class);
         Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 

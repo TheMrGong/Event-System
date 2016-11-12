@@ -64,6 +64,7 @@ public class EventManager implements Listener {
         currentEvent.onBegin(hoster);
         
         Bukkit.broadcastMessage(StringUtils.format("&e&l" + hoster.getName() + " has hosted an event! (&6" + event.getEventId() + "&e&l)"));
+        Bukkit.broadcastMessage(StringUtils.format("&e&lType &a/join&e&l to join in on the fun!"));
         if (hoster instanceof Player) joinEvent((Player) hoster, ActionCause.PLUGIN);
         
         return null;
@@ -97,11 +98,7 @@ public class EventManager implements Listener {
             return !isEventRunning() ? NO_EVENT_RUNNING : ISNT_PARTICIPATING;
         currentEvent.quitEvent(p, cause);
         participating.remove(p.getUniqueId());
-        p.setHealth(20);
-        p.setSaturation(20);
-        p.setFoodLevel(20);
-        p.setFireTicks(0);
-        p.getActivePotionEffects().clear();
+        resetPlayer(p);
         return null;
     }
 
@@ -115,6 +112,20 @@ public class EventManager implements Listener {
 
     public List<Player> getCurrentlyPlaying() {
         return participating.stream().map(Bukkit::getPlayer).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public void resetPlayer(Player p) {
+        p.setHealth(20);
+        p.setSaturation(20);
+        p.setFoodLevel(20);
+        p.setFireTicks(0);
+        p.getInventory().clear();
+        p.getInventory().setBoots(null);
+        p.getInventory().setLeggings(null);
+        p.getInventory().setChestplate(null);
+        p.getInventory().setHelmet(null);
+        p.updateInventory();
+        p.getActivePotionEffects().forEach(e -> p.removePotionEffect(e.getType()));
     }
 
     public Event getCurrentEvent() {
