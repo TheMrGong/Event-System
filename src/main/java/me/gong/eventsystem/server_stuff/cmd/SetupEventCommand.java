@@ -16,6 +16,10 @@ public class SetupEventCommand implements CommandExecutor {
             commandSender.sendMessage(StringUtils.info("Unable to setup events as console"));
             return true;
         }
+        if(!commandSender.hasPermission("eventsystem.admin")) {
+            commandSender.sendMessage(StringUtils.warn("You need permission to execute this command"));
+            return true;
+        }
 
         Player p = (Player) commandSender;
 

@@ -27,25 +27,6 @@ public abstract class AbstractCustomList<Wrapper extends ICustom<Data>, Data> im
         return !(findHandler(handler.getId()) != null || findHandler(handler.getClazz()) != null) && handlers.add(handler);
     }
 
-    public void pruneIds(Collection<String> ids) {
-        pruneUnused(e -> e.getId().isEmpty() || ids.contains(e.getId()));
-    }
-
-    public void pruneClasses(Collection<Class> validClasses) {
-        pruneUnused(e -> e.getClazz() == null || validClasses.contains(e.getClazz()));
-    }
-
-    private void pruneUnused(Predicate<Wrapper> predicate) {
-        Iterator<Wrapper> it = handlers.iterator();
-        while (it.hasNext()) {
-            Wrapper next = it.next();
-            if (!predicate.test(next)) {
-                it.remove();
-                EventSystem.get().getLogger().warning("Unused " + getTypeName() + ": " + next);
-            }
-        }
-    }
-
     public Data findHandler(String id) {
         return findHandler(e -> !e.getId().isEmpty() && id.equalsIgnoreCase(e.getId()));
     }

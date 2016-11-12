@@ -13,6 +13,8 @@ import me.gong.eventsystem.config.meta.ConfigHandler;
 import me.gong.eventsystem.events.task.data.TaskFrame;
 import me.gong.eventsystem.util.BukkitUtils;
 import me.gong.eventsystem.util.GenericUtils;
+import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -43,17 +45,6 @@ public abstract class Event implements Listener {
     
     public abstract String getEventId();
 
-    private Collection<Class> getAllClasses() {
-        Collection<Class> clazzes = new ArrayList<>();
-        data.values().stream().map(c -> {
-            List<Class<?>> clazz = new ArrayList<>();
-            clazz.add(c.getConfigType());
-            Arrays.stream(GenericUtils.getAllGenerics(c.getField())).forEach(clazz::add);
-            return clazz;
-        }).forEach(clazzes::addAll);
-        return clazzes;
-    }
-
     public ConfigHandler findCustomHandler(Object object) {
         return findCustom(object, customHandlers);
     }
@@ -70,15 +61,6 @@ public abstract class Event implements Listener {
 
     public CustomConfigList getCustomHandlers() {
         return customHandlers;
-    }
-
-    public void pruneAll() {
-        Collection<Class> allC = getAllClasses();
-        customHandlers.pruneClasses(allC);
-        customHandlers.pruneIds(data.keySet());
-
-        customFrames.pruneClasses(allC);
-        customFrames.pruneIds(data.keySet());
     }
 
     public Event registerConfigurables() {
@@ -129,12 +111,27 @@ public abstract class Event implements Listener {
         getPlaying().forEach(p -> BukkitUtils.sendActionMessage(p, actionMsg));
     }
 
+    protected void broadcastSound(Sound sound, float volume, float pitch) {
+        getPlaying().forEach(p -> p.playSound(p.getLocation(), sound, volume, pitch));
+    }
+
     protected void resetPlayer(Player p) {
         EventSystem.get().getEventManager().resetPlayer(p);
     }
 
     protected boolean isParticipating(Player player) {
         return getManager().isParticipating(player);
+    }
+
+    protected boolean isRunning() {
+        return getManager().isEventRunning() && getManager().getCurrentEvent().equals(this);
+    }
+
+    protected Location locationKeepingRot(Player player, Location location) {
+        Location ret = location.clone(), cur = player.getLocation();
+        ret.setYaw(cur.getYaw());
+        ret.setPitch(cur.getPitch());
+        return ret;
     }
 
     protected EventManager getManager() {

@@ -137,7 +137,6 @@ public class DataManager {
                 data.put(id, builder.build());
             }
         });
-        instance.pruneAll(); //clean up unused config handlers
     }
 
     public EventData getEventDataFor(Event event, boolean createNew) {

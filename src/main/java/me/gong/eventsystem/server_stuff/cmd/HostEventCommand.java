@@ -14,6 +14,10 @@ import org.bukkit.entity.Player;
 public class HostEventCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String cmd, String[] args) {
+        if(!commandSender.hasPermission("eventsystem.admin")) {
+            commandSender.sendMessage(StringUtils.warn("You need permission to execute this command"));
+            return true;
+        }
         EventManager em = EventSystem.get().getEventManager();
         if (command.getName().equalsIgnoreCase("host")) {
             if (args.length == 0) {

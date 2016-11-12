@@ -3,6 +3,7 @@ package me.gong.eventsystem.events;
 import me.gong.eventsystem.EventSystem;
 import me.gong.eventsystem.events.impl.BasicEvent;
 import me.gong.eventsystem.events.impl.redrover.RedRoverEvent;
+import me.gong.eventsystem.events.impl.waterdrop.WaterDropEvent;
 import me.gong.eventsystem.util.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -37,6 +38,7 @@ public class EventManager implements Listener {
         }.runTaskTimer(EventSystem.get(), 2, 1);
         registerEvent(new BasicEvent());
         registerEvent(new RedRoverEvent());
+        registerEvent(new WaterDropEvent());
         Bukkit.getPluginManager().registerEvents(this, EventSystem.get());
     }
 

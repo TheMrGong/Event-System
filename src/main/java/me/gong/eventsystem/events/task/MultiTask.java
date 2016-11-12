@@ -177,6 +177,7 @@ public abstract class MultiTask<Type> extends Task<Type> {
         public void onCancel() {
             Player p = getPlayer();
             if (p != null) p.sendMessage(StringUtils.warn("Unable to finish task."));
+            callback.onCancel();
         }
     }
 }

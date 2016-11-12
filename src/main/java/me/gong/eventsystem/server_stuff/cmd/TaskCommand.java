@@ -11,6 +11,10 @@ import org.bukkit.entity.Player;
 public class TaskCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command cmd, String label, String[] args) {
+        if(!commandSender.hasPermission("eventsystem.admin")) {
+            commandSender.sendMessage(StringUtils.warn("You need permission to execute this command"));
+            return true;
+        }
         if (commandSender instanceof Player) {
             Player p = (Player) commandSender;
             TaskManager tm = EventSystem.get().getTaskManager();

@@ -106,8 +106,6 @@ public class RedRoverEvent extends Event {
         return false;
     });
 
-    private boolean isJoinable;
-
     private Map<UUID, Location> origin = new HashMap<>();
     private UUID slayer;
 
@@ -119,7 +117,6 @@ public class RedRoverEvent extends Event {
 
     @Override
     public void onBegin(CommandSender sender) {
-        isJoinable = true;
 
         stageIndex = -1;
         rounds = 0;
@@ -146,7 +143,7 @@ public class RedRoverEvent extends Event {
 
     @Override
     public boolean joinEvent(Player player, EventManager.ActionCause cause) {
-        if (!isJoinable) {
+        if (eventState != EventState.BEGINNING) {
             player.sendMessage(StringUtils.warn("RedRover is unable to be joined, currently in-game"));
             return false;
         }
@@ -161,6 +158,10 @@ public class RedRoverEvent extends Event {
 
     @Override
     public void quitEvent(Player player, EventManager.ActionCause cause) {
+        if(getPlaying().size() - 1 <= 1 && isRunning()  && cause == EventManager.ActionCause.MANUAL) {
+            Bukkit.broadcastMessage(StringUtils.format("&c&lRedRover event &e&lwas cancelled due to lack of players"));
+            getManager().endCurrentEvent(EventManager.ActionCause.PLUGIN);
+        }
         if (cause == EventManager.ActionCause.MANUAL) {
             broadcast(StringUtils.info("&e" + player.getDisplayName() + "&7 has &cleft&7 the event."));
             if (isSlayer(player)) {
@@ -183,7 +184,6 @@ public class RedRoverEvent extends Event {
             chooseSlayer();
             SideBox boxStarting;
             runToRed = NumberUtils.r.nextBoolean();
-            isJoinable = false;
 
             if (runToRed) boxStarting = redSide;
             else boxStarting = redSide;
@@ -208,7 +208,9 @@ public class RedRoverEvent extends Event {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent ev) {
-        if(isParticipating(ev.getPlayer())) ev.setCancelled(true);
+        if(isParticipating(ev.getPlayer()) && (ev.getItem() == null || ev.getItem().getType() != Material.COOKED_BEEF)) {
+            if(ev.getPlayer().getGameMode() != GameMode.CREATIVE) ev.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -231,12 +233,16 @@ public class RedRoverEvent extends Event {
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent ev) {
-        if(ev.getItemDrop().getItemStack().getType() != Material.BOWL) ev.setCancelled(true);
+        if(ev.getItemDrop().getItemStack().getType() != Material.BOWL) {
+            if(ev.getPlayer().getGameMode() != GameMode.CREATIVE) ev.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onDamage(BlockDamageEvent ev) {
-        if(isParticipating(ev.getPlayer())) ev.setCancelled(true);
+        if(isParticipating(ev.getPlayer())) {
+            if(ev.getPlayer().getGameMode() != GameMode.CREATIVE) ev.setCancelled(true);
+        }
     }
 
     @Override
@@ -251,7 +257,7 @@ public class RedRoverEvent extends Event {
     private void checkRunning() {
         long timeDiff = System.currentTimeMillis() - timeSinceChange, maxTime = calculateMaxTime();
         if (timeDiff > maxTime) progressState();
-        if (eventState == EventState.RESTING && rounds % 5 == 0 && timeDiff >= maxTime) progressStage();
+        if (eventState == EventState.RESTING && rounds % stageSeperation == 0 && timeDiff >= maxTime) progressStage();
 
         maxTime = calculateMaxTime();
         long timeLeft = (timeSinceChange + maxTime) - System.currentTimeMillis();

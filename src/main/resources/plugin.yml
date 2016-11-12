@@ -3,15 +3,15 @@ version: ${project.version}
 main: me.gong.eventsystem.EventSystem
 commands:
   host:
-    default: op
   endevent:
     aliases: [ende]
-    default: op
   setup:
-    default: op
   task:
-    default: op
   join:
     aliases: [j]
   quit:
     aliases: [q]
+  permissions:
+   eventsystem.admin:
+    description: Gives permission to use event system commands
+    default: op
